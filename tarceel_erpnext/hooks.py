@@ -151,6 +151,13 @@ app_include_js = "tarceel_send_button.bundle.js"
 # 	}
 # }
 
+# Phase 5: add a native "WhatsApp" channel to Frappe's Notification by overriding
+# its controller (Frappe's channel dispatch has no plugin hook). The property
+# setter adding the channel option is applied by patches.txt.
+override_doctype_class = {
+	"Notification": "tarceel_erpnext.overrides.notification.TarceelNotification"
+}
+
 # Scheduled Tasks
 # ---------------
 

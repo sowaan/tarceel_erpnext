@@ -107,6 +107,15 @@ def send_message(recipient, message, reference_doctype=None, reference_name=None
 				frappe.PermissionError,
 			)
 
+	return send_and_log(number, message, reference_doctype, reference_name)
+
+
+def send_and_log(number, message, reference_doctype=None, reference_name=None):
+	"""Send one text via Tarceel and record a WhatsApp Message Log row. No
+	permission check or number normalization — callers handling untrusted input
+	must gate and normalize first (send_message does). A row is always created, so
+	a failed send is recorded as Failed rather than vanishing. Returns
+	{ok, name, status, message_id, error}."""
 	log = frappe.get_doc(
 		{
 			"doctype": "WhatsApp Message Log",
