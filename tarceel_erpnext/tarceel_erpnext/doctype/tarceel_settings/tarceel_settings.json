@@ -12,6 +12,9 @@
   "instance_id",
   "column_break_conn",
   "api_key",
+  "webhook_section",
+  "webhook_url",
+  "webhook_secret",
   "recipients_section",
   "phone_field_mappings"
  ],
@@ -58,6 +61,28 @@
    "fieldtype": "Password",
    "label": "Instance API Key",
    "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Let Tarceel send delivery-status updates back to this site. Use the Configure Webhook button to register this site's endpoint and store the signing secret.",
+   "fieldname": "webhook_section",
+   "fieldtype": "Section Break",
+   "label": "Webhook (Delivery Status)"
+  },
+  {
+   "description": "The endpoint registered with Tarceel. Set by the Configure Webhook button.",
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
+   "read_only": 1
+  },
+  {
+   "description": "Signing secret returned by Tarceel; used to verify incoming webhooks. Stored encrypted.",
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "collapsible": 1,

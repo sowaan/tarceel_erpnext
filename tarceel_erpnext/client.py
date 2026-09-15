@@ -140,3 +140,11 @@ def send_media(to, media_type, url=None, base64=None, caption=None, mimetype=Non
 		body["mimetype"] = mimetype
 
 	return _request("POST", _instance_url(settings, "/messages/media"), _headers(settings), json=body)
+
+
+def set_webhook(url):
+	"""PUT /instances/{id}/webhook — register this site's webhook URL with Tarceel.
+	Returns {"url": ..., "secret": "whsec_..."}. Tarceel issues a NEW secret on
+	every call, so the caller must store whatever secret comes back here."""
+	settings = get_settings()
+	return _request("PUT", _instance_url(settings, "/webhook"), _headers(settings), json={"url": url})

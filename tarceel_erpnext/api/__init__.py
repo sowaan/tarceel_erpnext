@@ -7,6 +7,7 @@ import re
 
 import frappe
 from frappe import _
+from frappe.utils import get_url
 
 from tarceel_erpnext import client
 from tarceel_erpnext.client import TarceelError, get_instance_status
@@ -244,3 +245,24 @@ def render_template(template, reference_doctype, reference_name):
 		)
 
 	return {"message": tpl.render(doc)}
+
+
+@frappe.whitelist()
+def configure_webhook():
+	"""Register this site's webhook endpoint with Tarceel and store the returned
+	signing secret (Phase 4). Re-running issues a fresh secret; we always keep the
+	most recent one. Returns {ok, message}."""
+	frappe.only_for("System Manager")
+
+	url = get_url("/api/method/tarceel_erpnext.webhook.handle")
+	try:
+		result = client.set_webhook(url)
+	except TarceelError as exc:
+		return {"ok": False, "message": str(exc)}
+
+	settings = frappe.get_doc("Tarceel Settings")
+	settings.webhook_url = result.get("url") or url
+	settings.webhook_secret = result.get("secret")
+	settings.save(ignore_permissions=True)
+
+	return {"ok": True, "message": _("Webhook registered at {0}").format(settings.webhook_url)}
