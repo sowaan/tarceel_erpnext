@@ -74,7 +74,12 @@ def apply_status_event(payload):
 	Returns the log name if updated, else None. Never raises for ordinary
 	no-op cases (unknown id, unknown status, out-of-order)."""
 	data = (payload or {}).get("data") or {}
-	message_id = data.get("id")
+	# We store the id returned by the send call (Tarceel's message UUID). Match on
+	# that. Tarceel's fix exposes it either as data.messageId (WAMID stays in
+	# data.id) or by making data.id itself the UUID again — prefer messageId, fall
+	# back to id, so this works under either shape. See
+	# docs/tarceel-webhook-correlation.md.
+	message_id = data.get("messageId") or data.get("id")
 	new_status = _STATUS_MAP.get(data.get("status"))
 	if not message_id or not new_status:
 		return None

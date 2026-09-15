@@ -60,6 +60,13 @@ class TestWebhook(FrappeTestCase):
 		webhook.apply_status_event({"data": {"id": "wamid.ABC", "status": "delivered"}})
 		self.assertEqual(self._status(), "Delivered")
 
+	def test_matches_on_messageid_when_id_is_wamid(self):
+		# The fixed-Tarceel shape: data.id is the WAMID, data.messageId is our UUID.
+		webhook.apply_status_event(
+			{"data": {"id": "3EB0C6F5WAMID", "messageId": "wamid.ABC", "status": "delivered"}}
+		)
+		self.assertEqual(self._status(), "Delivered")
+
 	def test_status_does_not_regress(self):
 		frappe.db.set_value("WhatsApp Message Log", self.log.name, "status", "Read")
 		webhook.apply_status_event({"data": {"id": "wamid.ABC", "status": "delivered"}})
