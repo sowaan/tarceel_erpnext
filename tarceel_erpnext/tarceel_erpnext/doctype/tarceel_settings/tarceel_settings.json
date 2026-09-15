@@ -11,7 +11,9 @@
   "base_url",
   "instance_id",
   "column_break_conn",
-  "api_key"
+  "api_key",
+  "recipients_section",
+  "phone_field_mappings"
  ],
  "fields": [
   {
@@ -56,6 +58,19 @@
    "fieldtype": "Password",
    "label": "Instance API Key",
    "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "recipients_section",
+   "fieldtype": "Section Break",
+   "label": "Default Recipient Fields"
+  },
+  {
+   "description": "Map a DocType to the fieldname holding its phone number. The Send WhatsApp dialog pre-fills the recipient from this field when opened on that DocType.",
+   "fieldname": "phone_field_mappings",
+   "fieldtype": "Table",
+   "label": "Phone Field Mappings",
+   "options": "WhatsApp Phone Field Mapping"
   }
  ],
  "hide_toolbar": 0,

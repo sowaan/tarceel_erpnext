@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/tarceel_erpnext/css/tarceel_erpnext.css"
-# app_include_js = "/assets/tarceel_erpnext/js/tarceel_erpnext.js"
+app_include_js = "/assets/tarceel_erpnext/js/tarceel_send_button.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/tarceel_erpnext/css/tarceel_erpnext.css"

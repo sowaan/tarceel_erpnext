@@ -3,9 +3,12 @@
 
 """Whitelisted (client-callable) server methods for tarceel_erpnext."""
 
+import re
+
 import frappe
 from frappe import _
 
+from tarceel_erpnext import client
 from tarceel_erpnext.client import TarceelError, get_instance_status
 
 # How each Tarceel sessionStatus should read to a Frappe admin, and whether it
@@ -60,3 +63,104 @@ def test_connection():
 		"session_status": session_status,
 		"instance_name": instance_name,
 	}
+
+
+def normalize_number(raw):
+	"""Reduce a user-entered phone number to the bare country-code + number digits
+	Tarceel expects (no '+', spaces, dashes, or brackets). Raises on anything that
+	can't be a real number."""
+	digits = re.sub(r"\D", "", raw or "")
+	if len(digits) < 8:
+		frappe.throw(
+			_("'{0}' is not a valid WhatsApp number. Use the full number with country code.").format(raw),
+			TarceelError,
+		)
+	return digits
+
+
+@frappe.whitelist()
+def send_message(recipient, message, reference_doctype=None, reference_name=None):
+	"""Send one WhatsApp text message and log it (Phase 2).
+
+	This is a per-message, individually composed send — one recipient, one body,
+	optionally tied to the document it was triggered from (guardrail #1: never a
+	list blast). A WhatsApp Message Log row is always created, so a failed send is
+	recorded as Failed rather than vanishing.
+
+	Returns {ok, name, status, message_id, error}.
+	"""
+	message = (message or "").strip()
+	if not message:
+		frappe.throw(_("Message body is required."), TarceelError)
+
+	number = normalize_number(recipient)
+
+	# Guardrail #1: if this send names a source document, the user must be allowed
+	# to see that document — you can't message "about" a record you can't read.
+	if reference_doctype and reference_name:
+		if not frappe.has_permission(reference_doctype, "read", reference_name):
+			frappe.throw(
+				_("You do not have permission to send from {0} {1}.").format(
+					reference_doctype, reference_name
+				),
+				frappe.PermissionError,
+			)
+
+	log = frappe.get_doc(
+		{
+			"doctype": "WhatsApp Message Log",
+			"recipient": number,
+			"message": message,
+			"direction": "Outgoing",
+			"status": "Pending",
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+		}
+	)
+	log.insert(ignore_permissions=True)
+
+	try:
+		response = client.send_text(number, message)
+		log.status = "Sent"
+		log.message_id = response.get("id")
+	except TarceelError as exc:
+		# Record the failure on the log; don't let the throw's queued message also
+		# pop a second, duplicate error dialog on the client.
+		log.status = "Failed"
+		log.error = str(exc)
+		frappe.clear_messages()
+
+	log.save(ignore_permissions=True)
+
+	return {
+		"ok": log.status == "Sent",
+		"name": log.name,
+		"status": log.status,
+		"message_id": log.message_id,
+		"error": log.error,
+	}
+
+
+@frappe.whitelist()
+def get_default_recipient(reference_doctype, reference_name):
+	"""Resolve the pre-fill phone number for the Send WhatsApp dialog from the
+	per-DocType mapping configured in Tarceel Settings. Returns {recipient}."""
+	if not (reference_doctype and reference_name):
+		return {"recipient": None}
+	if not frappe.has_permission(reference_doctype, "read", reference_name):
+		return {"recipient": None}
+
+	settings = frappe.get_cached_doc("Tarceel Settings")
+	mapping = next(
+		(m for m in settings.phone_field_mappings if m.document_type == reference_doctype),
+		None,
+	)
+	if not mapping:
+		return {"recipient": None}
+
+	# Guard against a stale/typo'd fieldname so we never build a bad query.
+	if not frappe.get_meta(reference_doctype).get_field(mapping.phone_field):
+		return {"recipient": None}
+
+	value = frappe.db.get_value(reference_doctype, reference_name, mapping.phone_field)
+	return {"recipient": value}
