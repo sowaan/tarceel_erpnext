@@ -38,6 +38,31 @@ class TestTarceelClient(FrappeTestCase):
 		settings.api_key = _TEST_KEY
 		settings.save()
 		frappe.clear_cache(doctype="Tarceel Settings")
+		frappe.cache().delete_value("tarceel_connection_snapshot")
+
+	def test_setup_status_gated_for_non_manager(self):
+		with mock.patch("frappe.has_permission", return_value=False):
+			result = api.get_setup_status()
+		self.assertFalse(result["can_manage"])
+		self.assertNotIn("configured", result)
+
+	def test_setup_status_not_configured(self):
+		# api_key/instance_id are mandatory, so an unconfigured single can't be saved
+		# blank — simulate the fresh state with a stub doc.
+		fake = frappe._dict(enabled=1, instance_id=None)
+		fake.get_password = lambda *a, **k: None
+		with mock.patch("frappe.get_cached_doc", return_value=fake):
+			result = api.get_setup_status()
+		self.assertTrue(result["can_manage"])
+		self.assertFalse(result["configured"])
+		self.assertNotIn("connection", result)
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_setup_status_reports_connection(self, req):
+		req.return_value = _resp(200, {"name": "X", "status": "active", "sessionStatus": "connected"})
+		result = api.get_setup_status()
+		self.assertTrue(result["configured"])
+		self.assertTrue(result["connection"]["ok"])
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_send_text_builds_request(self, req):

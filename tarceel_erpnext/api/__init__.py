@@ -68,6 +68,53 @@ def test_connection():
 	}
 
 
+@frappe.whitelist()
+def get_setup_status():
+	"""Setup/connection snapshot for the Notification form banner. Only meaningful
+	to users who can access Tarceel Settings — others get {can_manage: False} so no
+	banner is shown. Returns {can_manage, configured, connection?}."""
+	if not frappe.has_permission("Tarceel Settings", "read"):
+		return {"can_manage": False}
+
+	settings = frappe.get_cached_doc("Tarceel Settings")
+	has_key = bool(settings.get_password("api_key", raise_exception=False))
+	configured = bool(settings.enabled and settings.instance_id and has_key)
+
+	result = {
+		"can_manage": True,
+		"configured": configured,
+		"enabled": bool(settings.enabled),
+		"settings_url": "/app/tarceel-settings",
+	}
+	if configured:
+		result["connection"] = _connection_snapshot()
+	return result
+
+
+def _connection_snapshot():
+	"""Live instance/session health, cached briefly so opening Notification forms
+	doesn't hit Tarceel on every load."""
+	cached = frappe.cache().get_value("tarceel_connection_snapshot")
+	if cached is not None:
+		return cached
+
+	try:
+		data = get_instance_status()
+		session_status = data.get("sessionStatus")
+		healthy, hint = _SESSION_HINTS.get(
+			session_status, (False, _("No WhatsApp session is linked yet."))
+		)
+		if data.get("status") and data.get("status") != "active":
+			healthy = False
+			hint = _("The Tarceel instance is '{0}', not active.").format(data.get("status"))
+		snapshot = {"ok": bool(healthy), "session_status": session_status, "message": str(hint)}
+	except TarceelError as exc:
+		snapshot = {"ok": False, "session_status": None, "message": str(exc)}
+
+	frappe.cache().set_value("tarceel_connection_snapshot", snapshot, expires_in_sec=60)
+	return snapshot
+
+
 def normalize_number(raw):
 	"""Reduce a user-entered phone number to the bare country-code + number digits
 	Tarceel expects (no '+', spaces, dashes, or brackets). Raises on anything that
