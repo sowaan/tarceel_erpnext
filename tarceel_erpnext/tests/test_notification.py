@@ -13,6 +13,8 @@ from unittest import mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from tarceel_erpnext.overrides import notification as notif_mod
+
 
 def _make_notification(name, **overrides):
 	if frappe.db.exists("Notification", name):
@@ -64,10 +66,11 @@ class TestWhatsAppNotification(FrappeTestCase):
 		with mock.patch("frappe.enqueue") as enq:
 			notif.send_whatsapp(self.todo, {"doc": self.todo})
 		self.assertTrue(enq.called)
-		self.assertEqual(enq.call_args.args[0], "tarceel_erpnext.api.send_and_log")
+		self.assertEqual(enq.call_args.args[0], "tarceel_erpnext.overrides.notification.deliver")
 		kw = enq.call_args.kwargs
-		self.assertEqual(kw["number"], "923001110000")
+		self.assertEqual(kw["numbers"], ["923001110000"])
 		self.assertEqual(kw["message"], "Hi about Ship it")
+		self.assertFalse(kw["attach_pdf"])
 		self.assertEqual(kw["reference_doctype"], "ToDo")
 		self.assertEqual(kw["reference_name"], self.todo.name)
 
@@ -86,6 +89,46 @@ class TestWhatsAppNotification(FrappeTestCase):
 	def test_validate_requires_recipient(self):
 		with self.assertRaises(frappe.ValidationError):
 			_make_notification("TAR Test WA NoRecip", recipients=[])
+
+	def test_attach_print_enqueues_pdf_delivery(self):
+		notif = _make_notification("TAR Test WA Attach", attach_print=1)
+		with mock.patch("frappe.enqueue") as enq:
+			notif.send_whatsapp(self.todo, {"doc": self.todo})
+		self.assertTrue(enq.called)
+		self.assertEqual(enq.call_args.args[0], "tarceel_erpnext.overrides.notification.deliver")
+		kw = enq.call_args.kwargs
+		self.assertTrue(kw["attach_pdf"])
+		self.assertEqual(kw["numbers"], ["923001110000"])
+
+	def test_deliver_sends_pdf_as_document(self):
+		# The worker renders the PDF once and sends media with the caption.
+		with mock.patch.object(frappe, "get_print", return_value=b"%PDF-1.4 fake") as gp, mock.patch(
+			"tarceel_erpnext.api.send_media_and_log"
+		) as sml, mock.patch("tarceel_erpnext.api.send_and_log") as sal:
+			notif_mod.deliver(
+				["923001110000"],
+				"Your invoice",
+				"ToDo",
+				self.todo.name,
+				attach_pdf=True,
+				print_format="Standard",
+			)
+		gp.assert_called_once()
+		sml.assert_called_once()
+		sal.assert_not_called()
+		kw = sml.call_args.kwargs
+		self.assertEqual(kw["caption"], "Your invoice")
+		self.assertEqual(kw["mimetype"], "application/pdf")
+		self.assertTrue(kw["base64"])  # base64 of the rendered pdf
+		self.assertEqual(sml.call_args.args[1], "document")
+
+	def test_deliver_without_attach_sends_text(self):
+		with mock.patch("tarceel_erpnext.api.send_and_log") as sal, mock.patch(
+			"tarceel_erpnext.api.send_media_and_log"
+		) as sml:
+			notif_mod.deliver(["923001110000"], "hi", "ToDo", self.todo.name, attach_pdf=False)
+		sal.assert_called_once()
+		sml.assert_not_called()
 
 	def test_other_channels_unaffected(self):
 		# An Email notification still validates/saves through the subclass.

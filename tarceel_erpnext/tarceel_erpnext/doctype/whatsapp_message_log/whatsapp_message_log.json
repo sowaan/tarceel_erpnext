@@ -14,6 +14,8 @@
   "message_id",
   "message_section",
   "message",
+  "media_type",
+  "media_filename",
   "reference_section",
   "reference_doctype",
   "reference_name",
@@ -68,6 +70,21 @@
    "fieldtype": "Small Text",
    "label": "Message",
    "reqd": 1
+  },
+  {
+   "depends_on": "media_type",
+   "description": "Set when an attachment was sent (e.g. document, image).",
+   "fieldname": "media_type",
+   "fieldtype": "Data",
+   "label": "Media Type",
+   "read_only": 1
+  },
+  {
+   "depends_on": "media_filename",
+   "fieldname": "media_filename",
+   "fieldtype": "Data",
+   "label": "Media Filename",
+   "read_only": 1
   },
   {
    "collapsible": 1,

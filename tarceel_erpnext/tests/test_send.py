@@ -87,6 +87,29 @@ class TestSendMessage(FrappeTestCase):
 		res = api.get_default_recipient("User", "Administrator")
 		self.assertEqual(res["recipient"], "923009998877")
 
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_send_media_and_log_records_attachment(self, req):
+		req.return_value = _resp(200, {"id": "wamid.MEDIA"})
+		res = api.send_media_and_log(
+			"923001234567",
+			"document",
+			caption="Invoice PDF",
+			reference_doctype="ToDo",
+			reference_name=self.todo.name,
+			base64="ZmFrZQ==",
+			mimetype="application/pdf",
+			filename="INV-001.pdf",
+		)
+		self.assertTrue(res["ok"])
+		log = frappe.get_doc("WhatsApp Message Log", res["name"])
+		self.assertEqual(log.media_type, "document")
+		self.assertEqual(log.media_filename, "INV-001.pdf")
+		self.assertEqual(log.message, "Invoice PDF")
+		body = req.call_args.kwargs["json"]
+		self.assertEqual(body["type"], "document")
+		self.assertEqual(body["mimetype"], "application/pdf")
+		self.assertEqual(body["base64"], "ZmFrZQ==")
+
 	def test_get_default_recipient_no_mapping(self):
 		# ToDo has no configured mapping -> no default.
 		res = api.get_default_recipient("ToDo", self.todo.name)

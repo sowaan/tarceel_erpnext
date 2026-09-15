@@ -122,9 +122,10 @@ def send_text(to, text):
 	)
 
 
-def send_media(to, media_type, url=None, base64=None, caption=None, mimetype=None):
+def send_media(to, media_type, url=None, base64=None, caption=None, mimetype=None, filename=None):
 	"""POST /instances/{id}/messages/media. Provide either `url` or `base64`.
-	`mimetype` is required when media_type == "document". Returns {"id": ...}."""
+	`mimetype` is required when media_type == "document"; `filename` names the
+	document as it appears in WhatsApp. Returns {"id": ...}."""
 	if not (url or base64):
 		frappe.throw(_("send_media needs either a url or base64 payload."), TarceelError)
 
@@ -138,6 +139,8 @@ def send_media(to, media_type, url=None, base64=None, caption=None, mimetype=Non
 		body["caption"] = caption
 	if mimetype:
 		body["mimetype"] = mimetype
+	if filename:
+		body["filename"] = filename
 
 	return _request("POST", _instance_url(settings, "/messages/media"), _headers(settings), json=body)
 

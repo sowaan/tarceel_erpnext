@@ -10,6 +10,8 @@ conditions, recipients UI, scheduling — is inherited unchanged, so a WhatsApp
 rule is configured exactly like an Email one.
 """
 
+import base64
+
 import frappe
 from frappe import _
 from frappe.email.doctype.notification.notification import (
@@ -45,27 +47,38 @@ class TarceelNotification(Notification):
 		super().send_notification_by_channel(doc, context)
 
 	def send_whatsapp(self, doc, context):
-		"""Render the message once and enqueue one send per resolved number. Sends
-		are enqueued (after commit) so a slow/failing Tarceel call never blocks or
-		breaks the document save that triggered this notification."""
+		"""Render the message and enqueue delivery. When Attach Print is set, the
+		document's print format is rendered to a PDF and sent as a document with the
+		message as its caption (mirrors email notifications' Attach Print). Delivery
+		is enqueued (after commit) so a slow/failing send or PDF render never blocks
+		or breaks the document save that triggered this notification."""
 		message = frappe.render_template(self.message, context).strip()
-		if not message:
-			return
 
+		numbers = []
 		for number in self.get_whatsapp_recipients(doc, context):
 			try:
-				normalized = api.normalize_number(number)
+				numbers.append(api.normalize_number(number))
 			except TarceelError:
 				continue  # skip malformed numbers rather than fail the whole rule
-			frappe.enqueue(
-				"tarceel_erpnext.api.send_and_log",
-				enqueue_after_commit=True,
-				queue="short",
-				number=normalized,
-				message=message,
-				reference_doctype=doc.doctype,
-				reference_name=doc.name,
-			)
+		if not numbers:
+			return
+
+		attach_pdf = bool(self.attach_print)
+		if not message and not attach_pdf:
+			return
+
+		frappe.enqueue(
+			"tarceel_erpnext.overrides.notification.deliver",
+			enqueue_after_commit=True,
+			queue="long" if attach_pdf else "short",
+			timeout=600 if attach_pdf else 300,
+			numbers=numbers,
+			message=message,
+			reference_doctype=doc.doctype,
+			reference_name=doc.name,
+			attach_pdf=attach_pdf,
+			print_format=self.print_format or None,
+		)
 
 	def get_whatsapp_recipients(self, doc, context):
 		"""Resolve recipient phone numbers from the standard Notification Recipient
@@ -101,3 +114,28 @@ class TarceelNotification(Notification):
 	def _assignees(self, doc):
 		assignees = doc.get("_assign")
 		return frappe.parse_json(assignees) if assignees else []
+
+
+def deliver(numbers, message, reference_doctype, reference_name, attach_pdf=False, print_format=None):
+	"""Background worker for a WhatsApp notification. Renders the print PDF once (if
+	Attach Print was set) and sends to each recipient — as a document with the
+	message as caption when attaching, else as plain text."""
+	pdf_base64 = None
+	if attach_pdf:
+		pdf = frappe.get_print(reference_doctype, reference_name, print_format, as_pdf=True)
+		pdf_base64 = base64.b64encode(pdf).decode()
+
+	for number in numbers:
+		if pdf_base64:
+			api.send_media_and_log(
+				number,
+				"document",
+				caption=message,
+				reference_doctype=reference_doctype,
+				reference_name=reference_name,
+				base64=pdf_base64,
+				mimetype="application/pdf",
+				filename=f"{reference_name}.pdf",
+			)
+		else:
+			api.send_and_log(number, message, reference_doctype, reference_name)

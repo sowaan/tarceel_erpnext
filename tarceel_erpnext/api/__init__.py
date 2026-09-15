@@ -151,6 +151,57 @@ def send_and_log(number, message, reference_doctype=None, reference_name=None):
 	}
 
 
+def send_media_and_log(
+	number,
+	media_type,
+	caption=None,
+	reference_doctype=None,
+	reference_name=None,
+	url=None,
+	base64=None,
+	mimetype=None,
+	filename=None,
+):
+	"""Send a media message (image/document/…) via Tarceel and record a WhatsApp
+	Message Log row. No permission check or normalization — callers handling
+	untrusted input must gate first. Returns {ok, name, status, message_id, error}."""
+	log = frappe.get_doc(
+		{
+			"doctype": "WhatsApp Message Log",
+			"recipient": number,
+			"message": caption or f"({media_type})",
+			"media_type": media_type,
+			"media_filename": filename,
+			"direction": "Outgoing",
+			"status": "Pending",
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+		}
+	)
+	log.insert(ignore_permissions=True)
+
+	try:
+		response = client.send_media(
+			number, media_type, url=url, base64=base64, caption=caption, mimetype=mimetype, filename=filename
+		)
+		log.status = "Sent"
+		log.message_id = response.get("id")
+	except TarceelError as exc:
+		log.status = "Failed"
+		log.error = str(exc)
+		frappe.clear_messages()
+
+	log.save(ignore_permissions=True)
+
+	return {
+		"ok": log.status == "Sent",
+		"name": log.name,
+		"status": log.status,
+		"message_id": log.message_id,
+		"error": log.error,
+	}
+
+
 @frappe.whitelist()
 def get_default_recipient(reference_doctype, reference_name):
 	"""Resolve the pre-fill phone number for the Send WhatsApp dialog from the
