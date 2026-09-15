@@ -45,10 +45,10 @@
    "fieldname": "help_html",
    "fieldtype": "HTML",
    "label": "Help",
-   "options": "<div class=\"text-muted small\">Jinja templating, the same engine as Print Formats and Email Templates. The source document is available as <code>doc</code> — for example <code>Hi {{ doc.customer_name }}, your order {{ doc.name }} is confirmed.</code></div>"
+   "options": "<div class=\"alert alert-info small\" style=\"margin-bottom:0\"><p style=\"margin:0 0 6px\">Uses <strong>Jinja</strong> templating (the same engine as Print Formats and Email Templates). Reference the source document's fields with the <strong><code>doc.</code> prefix</strong> and the field's <em>fieldname</em> (not its label).</p><p style=\"margin:0 0 6px\">✅ Correct: <code>Hi {{ doc.contact_person }}, invoice {{ doc.name }} of {{ doc.grand_total }} is due on {{ doc.due_date }}.</code></p><p style=\"margin:0 0 6px\">❌ Wrong: <code>Hi {{ contact_person }}</code> — a bare field name without <code>doc.</code> renders blank.</p><p style=\"margin:0\">Tip: find a field's <em>fieldname</em> via the form's <em>Menu &rarr; Customize</em>, or hover the field. A field that is empty on the document will also render blank.</p></div>"
   },
   {
-   "description": "WhatsApp message body. Supports Jinja; the source document is available as doc.",
+   "description": "Insert document fields with {{ doc.fieldname }} — e.g. {{ doc.contact_person }}. See the Help note above.",
    "fieldname": "message",
    "fieldtype": "Code",
    "ignore_xss_filter": 1,
