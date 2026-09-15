@@ -10,7 +10,7 @@
   "enabled",
   "column_break_head",
   "reference_doctype",
-  "help_html",
+  "print_format",
   "message"
  ],
  "fields": [
@@ -42,13 +42,14 @@
    "options": "DocType"
   },
   {
-   "fieldname": "help_html",
-   "fieldtype": "HTML",
-   "label": "Help",
-   "options": "<div class=\"alert alert-info small\" style=\"margin-bottom:0\"><p style=\"margin:0 0 6px\">Uses <strong>Jinja</strong> templating (the same engine as Print Formats and Email Templates). Reference the source document's fields with the <strong><code>doc.</code> prefix</strong> and the field's <em>fieldname</em> (not its label).</p><p style=\"margin:0 0 6px\">✅ Correct: <code>Hi {{ doc.contact_person }}, invoice {{ doc.name }} of {{ doc.grand_total }} is due on {{ doc.due_date }}.</code></p><p style=\"margin:0 0 6px\">❌ Wrong: <code>Hi {{ contact_person }}</code> — a bare field name without <code>doc.</code> renders blank.</p><p style=\"margin:0\">Tip: find a field's <em>fieldname</em> via the form's <em>Menu &rarr; Customize</em>, or hover the field. A field that is empty on the document will also render blank.</p></div>"
+   "description": "Optional. When this template is chosen in the Send WhatsApp dialog, this print format is attached as a PDF.",
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Attach Print Format",
+   "options": "Print Format"
   },
   {
-   "description": "Insert document fields with {{ doc.fieldname }} — e.g. {{ doc.contact_person }}. See the Help note above.",
+   "description": "Jinja. Insert document fields with the doc. prefix, e.g. {{ doc.contact_person }}. A bare {{ contact_person }} renders blank.",
    "fieldname": "message",
    "fieldtype": "Code",
    "ignore_xss_filter": 1,

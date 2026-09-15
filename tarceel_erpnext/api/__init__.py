@@ -392,7 +392,7 @@ def render_template(template, reference_doctype, reference_name):
 			TarceelError,
 		)
 
-	return {"message": tpl.render(doc)}
+	return {"message": tpl.render(doc), "print_format": tpl.print_format}
 
 
 @frappe.whitelist()

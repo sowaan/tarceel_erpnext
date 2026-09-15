@@ -39,6 +39,24 @@ class TestMessageTemplate(FrappeTestCase):
 		out = api.render_template("TAR Test Render", "ToDo", self.todo.name)
 		self.assertEqual(out["message"], f"Task: Ship the crates ({self.todo.name})")
 
+	def test_render_returns_print_format(self):
+		if not frappe.db.exists("Print Format", "TAR ToDo PF"):
+			frappe.get_doc(
+				{
+					"doctype": "Print Format",
+					"name": "TAR ToDo PF",
+					"doc_type": "ToDo",
+					"print_format_type": "Jinja",
+					"html": "<p>{{ doc.name }}</p>",
+				}
+			).insert(ignore_permissions=True)
+
+		t = _make_template("TAR Test PF", "Hi {{ doc.name }}", "ToDo")
+		t.print_format = "TAR ToDo PF"
+		t.save()
+		out = api.render_template("TAR Test PF", "ToDo", self.todo.name)
+		self.assertEqual(out["print_format"], "TAR ToDo PF")
+
 	def test_scoped_template_rejects_wrong_doctype(self):
 		_make_template("TAR Test Scoped", "Hi {{ doc.name }}", "Sales Invoice")
 		with self.assertRaises(Exception):

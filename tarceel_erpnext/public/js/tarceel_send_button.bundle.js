@@ -191,8 +191,12 @@ tarceel_erpnext.apply_template = function (frm, d) {
 			reference_name: frm.docname,
 		},
 		callback(r) {
-			if (r.message && r.message.message != null) {
+			if (!r.message) return;
+			if (r.message.message != null) {
 				d.set_value("message", r.message.message);
+			}
+			if (r.message.print_format) {
+				d.set_value("print_format", r.message.print_format);
 			}
 		},
 	});
