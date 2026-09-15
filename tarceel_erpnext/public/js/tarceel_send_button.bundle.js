@@ -32,44 +32,87 @@ tarceel_erpnext.add_send_button = function (frm) {
 };
 
 tarceel_erpnext.open_send_dialog = function (frm) {
+	// Fetch the document's existing file attachments first so they can be offered
+	// as checkboxes (mirrors Frappe's own email dialog).
+	frappe.call({
+		method: "frappe.client.get_list",
+		args: {
+			doctype: "File",
+			filters: { attached_to_doctype: frm.doctype, attached_to_name: frm.docname },
+			fields: ["file_url", "file_name"],
+			limit_page_length: 0,
+		},
+		callback(r) {
+			tarceel_erpnext.build_send_dialog(frm, r.message || []);
+		},
+	});
+};
+
+tarceel_erpnext.build_send_dialog = function (frm, files) {
+	const fields = [
+		{
+			fieldname: "template",
+			fieldtype: "Select",
+			label: __("Template (optional)"),
+			options: [""],
+			description: __("Pick a template to fill the message; you can still edit it before sending."),
+			onchange() {
+				tarceel_erpnext.apply_template(frm, d);
+			},
+		},
+		{
+			fieldname: "recipient",
+			fieldtype: "Data",
+			label: __("Recipient Number"),
+			description: __("Full number with country code, e.g. 923001234567"),
+			reqd: 1,
+		},
+		{
+			fieldname: "message",
+			fieldtype: "Small Text",
+			label: __("Message"),
+			description: __("Optional when something is attached (used as the caption)."),
+		},
+		{ fieldtype: "Section Break", label: __("Attachments (optional)") },
+		{
+			fieldname: "print_format",
+			fieldtype: "Link",
+			label: __("Attach Print Format"),
+			options: "Print Format",
+			get_query: () => ({ filters: { doc_type: frm.doctype } }),
+			description: __("Send this document rendered as a PDF."),
+		},
+	];
+
+	if (files.length) {
+		fields.push({
+			fieldname: "attachments",
+			fieldtype: "MultiCheck",
+			label: __("Existing Attachments"),
+			columns: 1,
+			options: files.map((f) => ({ label: f.file_name, value: f.file_url })),
+		});
+	}
+
+	fields.push({
+		fieldname: "upload",
+		fieldtype: "Attach",
+		label: __("Upload a File"),
+	});
+
 	const d = new frappe.ui.Dialog({
 		title: __("Send WhatsApp"),
-		fields: [
-			{
-				fieldname: "template",
-				fieldtype: "Select",
-				label: __("Template (optional)"),
-				options: [""],
-				description: __("Pick a template to fill the message; you can still edit it before sending."),
-				onchange() {
-					tarceel_erpnext.apply_template(frm, d);
-				},
-			},
-			{
-				fieldname: "recipient",
-				fieldtype: "Data",
-				label: __("Recipient Number"),
-				description: __("Full number with country code, e.g. 923001234567"),
-				reqd: 1,
-			},
-			{
-				fieldname: "message",
-				fieldtype: "Small Text",
-				label: __("Message"),
-				description: __("Optional when a file is attached (used as the caption)."),
-			},
-			{
-				fieldname: "attachment",
-				fieldtype: "Attach",
-				label: __("Attach File (optional)"),
-			},
-		],
+		fields: fields,
 		primary_action_label: __("Send"),
 		primary_action(values) {
-			if (!values.message && !values.attachment) {
-				frappe.msgprint(__("Enter a message or attach a file."));
+			const file_urls = (values.attachments || []).slice();
+			if (values.upload) file_urls.push(values.upload);
+
+			if (!values.message && !values.print_format && !file_urls.length) {
+				frappe.msgprint(__("Enter a message or attach something."));
 				return;
 			}
+
 			d.get_primary_btn().prop("disabled", true);
 			frappe.call({
 				method: "tarceel_erpnext.api.send_message",
@@ -78,7 +121,8 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 					message: values.message,
 					reference_doctype: frm.doctype,
 					reference_name: frm.docname,
-					file_url: values.attachment,
+					file_urls: JSON.stringify(file_urls),
+					print_format: values.print_format,
 				},
 				freeze: true,
 				freeze_message: __("Sending WhatsApp message…"),
@@ -91,7 +135,9 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 						d.get_primary_btn().prop("disabled", false);
 						frappe.msgprint({
 							title: __("Send failed"),
-							message: frappe.utils.escape_html(res.error || __("Unknown error.")),
+							message: frappe.utils.escape_html(
+								res.error || __("One or more messages failed — check the WhatsApp Message Log.")
+							),
 							indicator: "red",
 						});
 					}

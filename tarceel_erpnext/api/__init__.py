@@ -82,17 +82,23 @@ def normalize_number(raw):
 
 
 @frappe.whitelist()
-def send_message(recipient, message=None, reference_doctype=None, reference_name=None, file_url=None):
-	"""Send one WhatsApp message and log it (Phase 2). With `file_url`, the file is
-	sent as an attachment with `message` as its caption; otherwise a plain text
-	message is sent.
+def send_message(
+	recipient,
+	message=None,
+	reference_doctype=None,
+	reference_name=None,
+	file_url=None,
+	file_urls=None,
+	print_format=None,
+):
+	"""Send one or more WhatsApp messages and log them (Phase 2). Attachments —
+	`print_format` (the document rendered to PDF) and any `file_url`/`file_urls`
+	(Frappe Files) — each go as their own media message; the typed `message` rides
+	as the caption on the first. With no attachment, a plain text message is sent.
 
-	This is a per-message, individually composed send — one recipient, one body,
-	optionally tied to the document it was triggered from (guardrail #1: never a
-	list blast). A WhatsApp Message Log row is always created, so a failed send is
-	recorded as Failed rather than vanishing.
-
-	Returns {ok, name, status, message_id, error}.
+	Per-message, individually composed send tied optionally to the source document
+	(guardrail #1: never a list blast). A WhatsApp Message Log row is always
+	created, so a failed send is recorded as Failed rather than vanishing.
 	"""
 	message = (message or "").strip()
 	number = normalize_number(recipient)
@@ -108,12 +114,52 @@ def send_message(recipient, message=None, reference_doctype=None, reference_name
 				frappe.PermissionError,
 			)
 
+	urls = []
+	if file_urls:
+		urls = frappe.parse_json(file_urls) if isinstance(file_urls, str) else list(file_urls)
 	if file_url:
-		return _send_file(number, message, reference_doctype, reference_name, file_url)
+		urls.append(file_url)
 
-	if not message:
-		frappe.throw(_("Message body is required."), TarceelError)
-	return send_and_log(number, message, reference_doctype, reference_name)
+	# Ordered list of attachments: the print PDF first, then each file.
+	senders = []
+	if print_format:
+		senders.append(("print", print_format))
+	senders.extend(("file", u) for u in urls if u)
+
+	if not senders:
+		if not message:
+			frappe.throw(_("Message body is required."), TarceelError)
+		return send_and_log(number, message, reference_doctype, reference_name)
+
+	# One WhatsApp message per attachment; the text rides as caption on the first.
+	results = []
+	for idx, (kind, ref) in enumerate(senders):
+		caption = message if idx == 0 else None
+		if kind == "print":
+			results.append(_send_print(number, caption, reference_doctype, reference_name, ref))
+		else:
+			results.append(_send_file(number, caption, reference_doctype, reference_name, ref))
+
+	if len(results) == 1:
+		return results[0]
+	return {"ok": all(r["ok"] for r in results), "count": len(results), "results": results}
+
+
+def _send_print(number, caption, reference_doctype, reference_name, print_format):
+	"""Render the source document with the given Print Format and send the PDF."""
+	if not (reference_doctype and reference_name):
+		frappe.throw(_("A source document is required to attach a print format."), TarceelError)
+	pdf = frappe.get_print(reference_doctype, reference_name, print_format or None, as_pdf=True)
+	return send_media_and_log(
+		number,
+		"document",
+		caption=caption,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+		base64=base64.b64encode(pdf).decode(),
+		mimetype="application/pdf",
+		filename=f"{reference_name}.pdf",
+	)
 
 
 def _media_type_for(mimetype):

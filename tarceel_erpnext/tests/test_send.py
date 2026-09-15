@@ -132,6 +132,45 @@ class TestSendMessage(FrappeTestCase):
 		self.assertTrue(body["base64"])
 		self.assertIn("/messages/media", req.call_args.args[1])
 
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_send_with_print_format_sends_pdf(self, req):
+		req.return_value = _resp(200, {"id": "wamid.PF"})
+		with mock.patch.object(frappe, "get_print", return_value=b"%PDF-1.4 x") as gp:
+			res = api.send_message(
+				"923001234567", "Your doc", "ToDo", self.todo.name, print_format="Standard"
+			)
+		gp.assert_called_once()
+		self.assertTrue(res["ok"])
+		log = frappe.get_doc("WhatsApp Message Log", res["name"])
+		self.assertEqual(log.media_type, "document")
+		self.assertEqual(req.call_args.kwargs["json"]["mimetype"], "application/pdf")
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_send_multiple_attachments(self, req):
+		req.return_value = _resp(200, {"id": "wamid.MULTI"})
+		f1 = frappe.get_doc(
+			{"doctype": "File", "file_name": "a.txt", "content": "a", "is_private": 1}
+		).insert()
+		f2 = frappe.get_doc(
+			{"doctype": "File", "file_name": "b.txt", "content": "b", "is_private": 1}
+		).insert()
+
+		res = api.send_message(
+			"923001234567",
+			"Two files",
+			"ToDo",
+			self.todo.name,
+			file_urls=[f1.file_url, f2.file_url],
+		)
+		# One WhatsApp message per file -> two Sent logs, aggregate ok.
+		self.assertTrue(res["ok"])
+		self.assertEqual(res["count"], 2)
+		self.assertEqual(req.call_count, 2)
+		# Caption only on the first.
+		captions = [c.kwargs["json"].get("caption") for c in req.call_args_list]
+		self.assertEqual(captions[0], "Two files")
+		self.assertIsNone(captions[1])
+
 	def test_get_default_recipient_no_mapping(self):
 		# ToDo has no configured mapping -> no default.
 		res = api.get_default_recipient("ToDo", self.todo.name)
