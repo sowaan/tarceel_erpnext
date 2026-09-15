@@ -91,3 +91,37 @@ class TestSendMessage(FrappeTestCase):
 		# ToDo has no configured mapping -> no default.
 		res = api.get_default_recipient("ToDo", self.todo.name)
 		self.assertIsNone(res["recipient"])
+
+	def test_recipient_via_dotted_link_path(self):
+		# Mirrors Sales Invoice "contact_person.mobile_no": hop ToDo.allocated_to
+		# (Link -> User) then read the User's mobile_no.
+		frappe.db.set_value("User", "Administrator", "mobile_no", "923004445566")
+		todo = frappe.get_doc(
+			{"doctype": "ToDo", "description": "hop test", "allocated_to": "Administrator"}
+		).insert()
+
+		settings = frappe.get_single("Tarceel Settings")
+		settings.set("phone_field_mappings", [])
+		settings.append(
+			"phone_field_mappings",
+			{"document_type": "ToDo", "phone_field": "allocated_to.mobile_no"},
+		)
+		settings.save()
+		frappe.clear_cache(doctype="Tarceel Settings")
+
+		res = api.get_default_recipient("ToDo", todo.name)
+		self.assertEqual(res["recipient"], "923004445566")
+
+	def test_dotted_path_empty_link_returns_none(self):
+		# allocated_to is empty on self.todo -> no recipient, no error.
+		settings = frappe.get_single("Tarceel Settings")
+		settings.set("phone_field_mappings", [])
+		settings.append(
+			"phone_field_mappings",
+			{"document_type": "ToDo", "phone_field": "allocated_to.mobile_no"},
+		)
+		settings.save()
+		frappe.clear_cache(doctype="Tarceel Settings")
+
+		res = api.get_default_recipient("ToDo", self.todo.name)
+		self.assertIsNone(res["recipient"])

@@ -20,11 +20,11 @@
   },
   {
    "columns": 4,
-   "description": "Fieldname (not label) on that DocType that holds the recipient's phone number, e.g. mobile_no.",
+   "description": "Fieldname (not label) holding the phone number, e.g. mobile_no. To read it from a linked record, use a dotted path: e.g. on Sales Invoice, contact_person.mobile_no reads the linked Contact's mobile_no.",
    "fieldname": "phone_field",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Phone Fieldname",
+   "label": "Phone Fieldname / Path",
    "reqd": 1
   }
  ],

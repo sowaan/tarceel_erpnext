@@ -158,12 +158,48 @@ def get_default_recipient(reference_doctype, reference_name):
 	if not mapping:
 		return {"recipient": None}
 
-	# Guard against a stale/typo'd fieldname so we never build a bad query.
-	if not frappe.get_meta(reference_doctype).get_field(mapping.phone_field):
-		return {"recipient": None}
-
-	value = frappe.db.get_value(reference_doctype, reference_name, mapping.phone_field)
+	value = resolve_field_path(reference_doctype, reference_name, mapping.phone_field)
 	return {"recipient": value}
+
+
+def resolve_field_path(doctype, name, path):
+	"""Resolve a (possibly dotted) field path against a document and return the
+	value. A single segment reads a direct field. A dotted path hops through Link
+	/ Dynamic Link fields, e.g. on Sales Invoice "contact_person.mobile_no" reads
+	the linked Contact's mobile_no. Returns None if any hop is missing/empty or a
+	non-link segment is used mid-path."""
+	try:
+		parts = (path or "").split(".")
+		cur_dt, cur_name = doctype, name
+
+		for i, part in enumerate(parts):
+			field = frappe.get_meta(cur_dt).get_field(part)
+			if not field:
+				return None
+
+			value = frappe.db.get_value(cur_dt, cur_name, part)
+
+			# Last segment: return whatever it holds.
+			if i == len(parts) - 1:
+				return value
+
+			# Intermediate segment: must be a link we can follow.
+			if not value:
+				return None
+			if field.fieldtype == "Link":
+				cur_dt = field.options
+			elif field.fieldtype == "Dynamic Link":
+				cur_dt = frappe.db.get_value(cur_dt, cur_name, field.options)
+			else:
+				return None
+			if not cur_dt:
+				return None
+			cur_name = value
+
+		return None
+	except Exception:
+		# A prefill helper must never break the Send dialog; just yield no default.
+		return None
 
 
 @frappe.whitelist()
