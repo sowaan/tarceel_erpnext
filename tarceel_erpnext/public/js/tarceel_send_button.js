@@ -36,6 +36,16 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 		title: __("Send WhatsApp"),
 		fields: [
 			{
+				fieldname: "template",
+				fieldtype: "Select",
+				label: __("Template (optional)"),
+				options: [""],
+				description: __("Pick a template to fill the message; you can still edit it before sending."),
+				onchange() {
+					tarceel_erpnext.apply_template(frm, d);
+				},
+			},
+			{
 				fieldname: "recipient",
 				fieldtype: "Data",
 				label: __("Recipient Number"),
@@ -94,5 +104,40 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 		},
 	});
 
+	// Load the templates that apply to this document type.
+	frappe.call({
+		method: "tarceel_erpnext.api.get_templates_for",
+		args: { reference_doctype: frm.doctype },
+		callback(r) {
+			const names = (r.message || []).map((t) => t.name);
+			if (names.length) {
+				d.set_df_property("template", "options", [""].concat(names));
+			} else {
+				d.set_df_property("template", "hidden", 1);
+			}
+		},
+	});
+
 	d.show();
+};
+
+// Render the selected template against the current document and drop it into
+// the message box. Server-side rendering reuses Frappe's Jinja engine.
+tarceel_erpnext.apply_template = function (frm, d) {
+	const template = d.get_value("template");
+	if (!template) return;
+
+	frappe.call({
+		method: "tarceel_erpnext.api.render_template",
+		args: {
+			template: template,
+			reference_doctype: frm.doctype,
+			reference_name: frm.docname,
+		},
+		callback(r) {
+			if (r.message && r.message.message != null) {
+				d.set_value("message", r.message.message);
+			}
+		},
+	});
 };

@@ -164,3 +164,47 @@ def get_default_recipient(reference_doctype, reference_name):
 
 	value = frappe.db.get_value(reference_doctype, reference_name, mapping.phone_field)
 	return {"recipient": value}
+
+
+@frappe.whitelist()
+def get_templates_for(reference_doctype=None):
+	"""List enabled WhatsApp Message Templates usable when sending from
+	`reference_doctype` — i.e. templates scoped to that DocType plus unscoped
+	(global) ones. Returns a list of {name} dicts."""
+	or_filters = {"reference_doctype": ["in", [reference_doctype, ""]]} if reference_doctype else None
+	filters = {"enabled": 1}
+	if not reference_doctype:
+		filters["reference_doctype"] = ""
+
+	return frappe.get_all(
+		"WhatsApp Message Template",
+		filters=filters,
+		or_filters=or_filters,
+		fields=["name"],
+		order_by="template_name asc",
+		ignore_permissions=True,
+	)
+
+
+@frappe.whitelist()
+def render_template(template, reference_doctype, reference_name):
+	"""Render a WhatsApp Message Template against a real document and return the
+	text, for previewing/prefilling the Send dialog. Uses Frappe's own Jinja
+	engine (frappe.render_template). Requires read permission on the document."""
+	if not frappe.has_permission(reference_doctype, "read", reference_name):
+		frappe.throw(
+			_("You do not have permission to read {0} {1}.").format(reference_doctype, reference_name),
+			frappe.PermissionError,
+		)
+
+	doc = frappe.get_doc(reference_doctype, reference_name)
+	tpl = frappe.get_doc("WhatsApp Message Template", template)
+
+	# A scoped template must match the document it's rendered against.
+	if tpl.reference_doctype and tpl.reference_doctype != reference_doctype:
+		frappe.throw(
+			_("Template '{0}' does not apply to {1}.").format(template, reference_doctype),
+			TarceelError,
+		)
+
+	return {"message": tpl.render(doc)}
