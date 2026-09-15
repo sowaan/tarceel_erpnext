@@ -56,11 +56,20 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 				fieldname: "message",
 				fieldtype: "Small Text",
 				label: __("Message"),
-				reqd: 1,
+				description: __("Optional when a file is attached (used as the caption)."),
+			},
+			{
+				fieldname: "attachment",
+				fieldtype: "Attach",
+				label: __("Attach File (optional)"),
 			},
 		],
 		primary_action_label: __("Send"),
 		primary_action(values) {
+			if (!values.message && !values.attachment) {
+				frappe.msgprint(__("Enter a message or attach a file."));
+				return;
+			}
 			d.get_primary_btn().prop("disabled", true);
 			frappe.call({
 				method: "tarceel_erpnext.api.send_message",
@@ -69,6 +78,7 @@ tarceel_erpnext.open_send_dialog = function (frm) {
 					message: values.message,
 					reference_doctype: frm.doctype,
 					reference_name: frm.docname,
+					file_url: values.attachment,
 				},
 				freeze: true,
 				freeze_message: __("Sending WhatsApp message…"),

@@ -3,6 +3,8 @@
 
 """Whitelisted (client-callable) server methods for tarceel_erpnext."""
 
+import base64
+import mimetypes
 import re
 
 import frappe
@@ -80,8 +82,10 @@ def normalize_number(raw):
 
 
 @frappe.whitelist()
-def send_message(recipient, message, reference_doctype=None, reference_name=None):
-	"""Send one WhatsApp text message and log it (Phase 2).
+def send_message(recipient, message=None, reference_doctype=None, reference_name=None, file_url=None):
+	"""Send one WhatsApp message and log it (Phase 2). With `file_url`, the file is
+	sent as an attachment with `message` as its caption; otherwise a plain text
+	message is sent.
 
 	This is a per-message, individually composed send — one recipient, one body,
 	optionally tied to the document it was triggered from (guardrail #1: never a
@@ -91,9 +95,6 @@ def send_message(recipient, message, reference_doctype=None, reference_name=None
 	Returns {ok, name, status, message_id, error}.
 	"""
 	message = (message or "").strip()
-	if not message:
-		frappe.throw(_("Message body is required."), TarceelError)
-
 	number = normalize_number(recipient)
 
 	# Guardrail #1: if this send names a source document, the user must be allowed
@@ -107,7 +108,48 @@ def send_message(recipient, message, reference_doctype=None, reference_name=None
 				frappe.PermissionError,
 			)
 
+	if file_url:
+		return _send_file(number, message, reference_doctype, reference_name, file_url)
+
+	if not message:
+		frappe.throw(_("Message body is required."), TarceelError)
 	return send_and_log(number, message, reference_doctype, reference_name)
+
+
+def _media_type_for(mimetype):
+	"""Map a mimetype to the Tarceel media `type`."""
+	if mimetype.startswith("image/"):
+		return "image"
+	if mimetype.startswith("video/"):
+		return "video"
+	if mimetype.startswith("audio/"):
+		return "audio"
+	return "document"
+
+
+def _send_file(number, caption, reference_doctype, reference_name, file_url):
+	"""Resolve a Frappe File the current user may read, then send it as media."""
+	file_doc = frappe.get_doc("File", {"file_url": file_url})
+	if not file_doc.has_permission("read"):
+		frappe.throw(_("You do not have permission to send that file."), frappe.PermissionError)
+
+	filename = file_doc.file_name or "attachment"
+	mimetype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+	content = file_doc.get_content()
+	if isinstance(content, str):
+		content = content.encode("utf-8")
+	encoded = base64.b64encode(content).decode()
+
+	return send_media_and_log(
+		number,
+		_media_type_for(mimetype),
+		caption=caption or None,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+		base64=encoded,
+		mimetype=mimetype,
+		filename=filename,
+	)
 
 
 def send_and_log(number, message, reference_doctype=None, reference_name=None):
