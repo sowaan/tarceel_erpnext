@@ -39,7 +39,7 @@ function tarceel_whatsapp_hint(frm) {
 			if (!s.configured) {
 				frm.set_intro(
 					__(
-						"Tarceel is not set up yet — set the Instance API Key and Instance ID in {0} before this notification can send.",
+						"Tarceel is not set up yet. Set the Instance API Key and Instance ID in {0} before this notification can send.",
 						[link]
 					),
 					"orange"

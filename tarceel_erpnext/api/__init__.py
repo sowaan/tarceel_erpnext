@@ -18,12 +18,12 @@ from tarceel_erpnext.client import TarceelError, get_instance_status
 # counts as a healthy, send-ready instance.
 _SESSION_HINTS = {
 	"connected": (True, _("Connected and ready to send.")),
-	"connecting": (False, _("The WhatsApp session is still connecting — try again shortly.")),
-	"qr_pending": (False, _("Waiting for a QR scan — link the number in the Tarceel dashboard.")),
-	"reconnecting": (False, _("The WhatsApp session is reconnecting — try again shortly.")),
+	"connecting": (False, _("The WhatsApp session is still connecting. Try again shortly.")),
+	"qr_pending": (False, _("Waiting for a QR scan. Link the number in the Tarceel dashboard.")),
+	"reconnecting": (False, _("The WhatsApp session is reconnecting. Try again shortly.")),
 	"logged_out": (
 		False,
-		_("The WhatsApp number is logged out — re-scan the QR code in the Tarceel dashboard."),
+		_("The WhatsApp number is logged out. Re-scan the QR code in the Tarceel dashboard."),
 	),
 }
 
@@ -52,7 +52,7 @@ def test_connection():
 
 	healthy, hint = _SESSION_HINTS.get(
 		session_status,
-		(False, _("No WhatsApp session is linked yet — link a number in the Tarceel dashboard.")),
+		(False, _("No WhatsApp session is linked yet. Link a number in the Tarceel dashboard.")),
 	)
 
 	if instance_status and instance_status != "active":

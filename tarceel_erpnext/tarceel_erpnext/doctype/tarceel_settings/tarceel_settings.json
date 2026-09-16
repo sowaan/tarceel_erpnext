@@ -24,7 +24,7 @@
    "fieldname": "disclosure_html",
    "fieldtype": "HTML",
    "label": "About",
-   "options": "<div class=\"text-muted small\" style=\"margin-bottom:0;\">Unofficial, QR-linked WhatsApp integration &mdash; not the official WhatsApp Business Platform, and not affiliated with WhatsApp or Meta. Don't have an account? <a href=\"https://app.tarceel.com\" target=\"_blank\" rel=\"noopener\">Create a Tarceel account</a>.</div>"
+   "options": "<div class=\"text-muted small\" style=\"margin-bottom:0;\">Unofficial, QR-linked WhatsApp integration. Not the official WhatsApp Business Platform, and not affiliated with WhatsApp or Meta. Don't have an account? <a href=\"https://app.tarceel.com\" target=\"_blank\" rel=\"noopener\">Create a Tarceel account</a>.</div>"
   },
   {
    "default": "1",

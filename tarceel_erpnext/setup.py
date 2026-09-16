@@ -6,6 +6,7 @@
 import frappe
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
+from tarceel_erpnext.branding import ensure_workspace_hero
 from tarceel_erpnext.default_data import seed_default_data
 
 
@@ -52,10 +53,12 @@ def ensure_tarceel_desktop_icon_app():
 def after_install():
 	ensure_whatsapp_notification_channel()
 	ensure_tarceel_desktop_icon_app()
+	ensure_workspace_hero()
 	seed_default_data()
 
 
 def after_migrate():
 	ensure_whatsapp_notification_channel()
 	ensure_tarceel_desktop_icon_app()
+	ensure_workspace_hero()
 	seed_default_data()
