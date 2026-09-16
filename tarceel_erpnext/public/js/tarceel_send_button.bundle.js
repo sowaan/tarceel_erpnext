@@ -28,7 +28,7 @@ tarceel_erpnext.add_send_button = function (frm) {
 	if (!frm || frm.is_new()) return;
 	if (tarceel_erpnext.SEND_BUTTON_EXCLUDE.has(frm.doctype)) return;
 
-	const $btn = frm.add_custom_button(__("Send WhatsApp"), function () {
+	const $btn = frm.add_custom_button(__("WhatsApp"), function () {
 		tarceel_erpnext.open_send_dialog(frm);
 	});
 	// Prepend the WhatsApp glyph (guard against re-adding on repeated refreshes).
