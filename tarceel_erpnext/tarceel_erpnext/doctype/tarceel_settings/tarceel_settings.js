@@ -188,6 +188,9 @@ function test_connection(frm) {
 				message: frappe.utils.escape_html(res.message || __("No response from server.")),
 				indicator: res.ok ? "green" : "red",
 			});
+			// test_connection just refreshed the cached snapshot; re-render the
+			// status card so it reflects the live result immediately.
+			render_intro(frm);
 		},
 	});
 }

@@ -42,6 +42,8 @@ def test_connection():
 	try:
 		data = get_instance_status()
 	except TarceelError as exc:
+		# Keep the cached snapshot (read by the status card/banner) in sync.
+		_store_connection_snapshot({"ok": False, "session_status": None, "message": str(exc)})
 		return {"ok": False, "message": str(exc)}
 
 	session_status = data.get("sessionStatus")
@@ -56,6 +58,12 @@ def test_connection():
 	if instance_status and instance_status != "active":
 		healthy = False
 		hint = _("The Tarceel instance is '{0}', not active.").format(instance_status)
+
+	# This is a fresh live check — refresh the snapshot the status card/banner read,
+	# so they reflect it immediately instead of a stale (up to 60s) cached value.
+	_store_connection_snapshot(
+		{"ok": bool(healthy), "session_status": session_status, "message": str(hint)}
+	)
 
 	prefix = _("Reached '{0}'.").format(instance_name) if instance_name else _("Reached Tarceel.")
 
@@ -91,10 +99,20 @@ def get_setup_status():
 	return result
 
 
+_CONNECTION_SNAPSHOT_KEY = "tarceel_connection_snapshot"
+_CONNECTION_SNAPSHOT_TTL = 30
+
+
+def _store_connection_snapshot(snapshot):
+	frappe.cache().set_value(
+		_CONNECTION_SNAPSHOT_KEY, snapshot, expires_in_sec=_CONNECTION_SNAPSHOT_TTL
+	)
+
+
 def _connection_snapshot():
-	"""Live instance/session health, cached briefly so opening Notification forms
-	doesn't hit Tarceel on every load."""
-	cached = frappe.cache().get_value("tarceel_connection_snapshot")
+	"""Live instance/session health, cached briefly so opening forms doesn't hit
+	Tarceel on every load. Test Connection refreshes this immediately."""
+	cached = frappe.cache().get_value(_CONNECTION_SNAPSHOT_KEY)
 	if cached is not None:
 		return cached
 
@@ -111,7 +129,7 @@ def _connection_snapshot():
 	except TarceelError as exc:
 		snapshot = {"ok": False, "session_status": None, "message": str(exc)}
 
-	frappe.cache().set_value("tarceel_connection_snapshot", snapshot, expires_in_sec=60)
+	_store_connection_snapshot(snapshot)
 	return snapshot
 
 
