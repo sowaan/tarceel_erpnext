@@ -43,12 +43,8 @@ _HERO_STYLE = """
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 .tz-hero-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.tz-badge {
-	flex: 0 0 auto; width: 52px; height: 52px; border-radius: 13px;
-	background: rgba(37, 211, 102, 0.12); border: 1px solid rgba(37, 211, 102, 0.3);
-	display: flex; align-items: center; justify-content: center;
-}
-.tz-badge img { width: 38px; height: 38px; object-fit: contain; }
+.tz-badge { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+.tz-badge img { width: 48px; height: 48px; object-fit: contain; }
 .tz-title {
 	font-size: 22px; font-weight: 700; color: var(--text-color, #1a2a3a); letter-spacing: 0.2px;
 	display: flex; align-items: center; gap: 9px;
@@ -67,7 +63,9 @@ _HERO_STYLE = """
 	padding: 9px 18px; border-radius: 8px; text-decoration: none; white-space: nowrap;
 	border: 1.5px solid #25D366; transition: all 0.12s ease;
 }
-.tz-cta:hover { background: #25D366; color: #ffffff; border-color: #25D366; }
+.tz-cta:hover, .tz-cta:focus {
+	background: #25D366; color: #ffffff; border-color: #25D366; text-decoration: none;
+}
 @media (max-width: 640px) {
 	.tz-hero { padding: 16px; }
 	.tz-title { font-size: 19px; }
