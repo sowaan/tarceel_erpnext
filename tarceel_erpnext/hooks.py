@@ -31,6 +31,9 @@ app_include_js = [
 	"tarceel_setup_banner.bundle.js",
 ]
 
+# Ship a "whatsapp" icon (used in the document timeline badge).
+app_include_icons = ["tarceel_erpnext/icons/tarceel-icons.svg"]
+
 # include js, css files in header of web template
 # web_include_css = "/assets/tarceel_erpnext/css/tarceel_erpnext.css"
 # web_include_js = "/assets/tarceel_erpnext/js/tarceel_erpnext.js"

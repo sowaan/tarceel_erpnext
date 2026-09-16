@@ -30,10 +30,12 @@ class TestTimeline(FrappeTestCase):
 		self._log()
 		items = timeline.get_timeline_content("ToDo", self.todo.name)
 		self.assertEqual(len(items), 1)
+		self.assertEqual(items[0]["icon"], "whatsapp")
 		content = items[0]["content"]
 		self.assertIn("Hello there", content)
 		self.assertIn("Delivered", content)  # delivery status pill
 		self.assertIn("923001234567", content)
+		self.assertIn("ago", content)  # relative timestamp
 
 	def test_unrelated_document_has_no_items(self):
 		self._log()
