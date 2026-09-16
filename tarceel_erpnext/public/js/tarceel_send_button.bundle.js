@@ -142,7 +142,7 @@ tarceel_erpnext.build_send_dialog = function (frm, files) {
 						frappe.msgprint({
 							title: __("Send failed"),
 							message: frappe.utils.escape_html(
-								res.error || __("One or more messages failed — check the WhatsApp Message Log.")
+								res.error || __("One or more messages failed. Check the WhatsApp Message Log.")
 							),
 							indicator: "red",
 						});

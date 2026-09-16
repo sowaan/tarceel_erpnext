@@ -17,7 +17,7 @@ function render_intro(frm) {
 	if (!field) return;
 
 	const disclosure = `<div class="tarceel-disclosure text-muted small"><span class="tarceel-disclosure-ic">&#9432;</span>${__(
-		"Unofficial, QR-linked WhatsApp integration — not the official WhatsApp Business Platform."
+		"Unofficial, QR-linked WhatsApp integration. Not the official WhatsApp Business Platform."
 	)}</div>`;
 
 	const configured = frm.doc.instance_id && frm.doc.__onload && frm.doc.__onload.has_api_key;
@@ -55,7 +55,7 @@ function render_intro(frm) {
 					<div>
 						<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
 						<div class="tarceel-intro-sub text-muted">${__(
-							"Send WhatsApp messages and notifications from your documents. Unofficial, QR-linked integration — not the official WhatsApp Business Platform."
+							"Send WhatsApp messages and notifications from your documents. Unofficial, QR-linked integration, not the official WhatsApp Business Platform."
 						)}</div>
 					</div>
 				</div>
