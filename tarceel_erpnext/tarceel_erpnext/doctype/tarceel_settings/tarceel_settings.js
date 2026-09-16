@@ -16,13 +16,25 @@ function render_intro(frm) {
 	const field = frm.get_field("disclosure_html");
 	if (!field) return;
 
+	const disclosure = `<div class="text-muted small" style="margin-bottom:0">${__(
+		"Unofficial, QR-linked WhatsApp integration — not the official WhatsApp Business Platform."
+	)}</div>`;
+
 	const configured = frm.doc.instance_id && frm.doc.__onload && frm.doc.__onload.has_api_key;
 	if (configured) {
-		field.html(
-			`<div class="text-muted small" style="margin-bottom:0">${__(
-				"Unofficial, QR-linked WhatsApp integration — not the official WhatsApp Business Platform."
-			)}</div>`
-		);
+		// Show the disclosure; if the live connection is unhealthy, show a status
+		// card above it (so the problem surfaces here, not just on the Desk banner).
+		field.html(disclosure);
+		frappe.call({
+			method: "tarceel_erpnext.api.get_setup_status",
+			callback(r) {
+				const s = r.message || {};
+				if (s.connection && !s.connection.ok) {
+					field.html(connection_problem_card(s.connection.message) + disclosure);
+					field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
+				}
+			},
+		});
 		return;
 	}
 
@@ -53,6 +65,20 @@ function render_intro(frm) {
 	`);
 }
 
+function connection_problem_card(message) {
+	return `
+		<div class="tarceel-conn-card">
+			<div class="tarceel-conn-left">
+				<span class="tarceel-conn-dot"></span>
+				<div>
+					<div class="tarceel-conn-title">${__("WhatsApp connection problem")}</div>
+					<div class="tarceel-conn-msg text-muted">${frappe.utils.escape_html(message || "")}</div>
+				</div>
+			</div>
+			<button class="btn btn-sm tarceel-recheck-btn">${__("Test Connection")}</button>
+		</div>`;
+}
+
 function inject_intro_styles() {
 	if (document.getElementById("tarceel-intro-styles")) return;
 	const css = `
@@ -79,6 +105,15 @@ function inject_intro_styles() {
 			display: inline-flex; align-items: center; justify-content: center;
 			background: #25D366; color: #fff; font-size: 11px; font-weight: 600;
 		}
+		.tarceel-conn-card {
+			display: flex; align-items: center; justify-content: space-between; gap: 16px;
+			padding: 14px 16px; margin: 6px 0 14px; border-radius: var(--border-radius-lg, 10px);
+			background: var(--yellow-50, #fff8e6); border: 1px solid #f0d48a; border-left: 3px solid #e8a33d;
+		}
+		.tarceel-conn-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+		.tarceel-conn-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #e8a33d; }
+		.tarceel-conn-title { font-weight: 600; }
+		.tarceel-conn-msg { margin-top: 2px; }
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
