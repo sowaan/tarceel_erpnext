@@ -165,6 +165,13 @@ def send_message(
 	(guardrail #1: never a list blast). A WhatsApp Message Log row is always
 	created, so a failed send is recorded as Failed rather than vanishing.
 	"""
+	# Sending is gated on create access to the log — the WhatsApp Sender role, or
+	# System Manager. Keeps sending to the people an admin has authorised.
+	if not frappe.has_permission("WhatsApp Message Log", "create"):
+		frappe.throw(
+			_("You are not permitted to send WhatsApp messages."), frappe.PermissionError
+		)
+
 	message = (message or "").strip()
 	number = normalize_number(recipient)
 
