@@ -26,19 +26,29 @@ function render_intro(frm) {
 		return;
 	}
 
+	const step = (n, text) =>
+		`<div class="tarceel-intro-step"><span class="tarceel-step-num">${n}</span><span>${text}</span></div>`;
+
 	field.html(`
 		<div class="tarceel-intro-card">
-			<div class="tarceel-intro-left">
-				<span class="tarceel-intro-icon-tile"><img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" /></span>
-				<div>
-					<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
-					<div class="tarceel-intro-sub text-muted">${__(
-						"Send WhatsApp messages and notifications from your documents. Unofficial, QR-linked integration — not the official WhatsApp Business Platform."
-					)}</div>
+			<div class="tarceel-intro-header">
+				<div class="tarceel-intro-left">
+					<span class="tarceel-intro-icon-tile"><img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" /></span>
+					<div>
+						<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
+						<div class="tarceel-intro-sub text-muted">${__(
+							"Send WhatsApp messages and notifications from your documents. Unofficial, QR-linked integration — not the official WhatsApp Business Platform."
+						)}</div>
+					</div>
 				</div>
+				<a href="https://app.tarceel.com" target="_blank" rel="noopener"
+					class="btn btn-primary btn-sm tarceel-intro-btn">${__("Create Tarceel Account")}</a>
 			</div>
-			<a href="https://app.tarceel.com" target="_blank" rel="noopener"
-				class="btn btn-primary btn-sm tarceel-intro-btn">${__("Create Tarceel Account")}</a>
+			<div class="tarceel-intro-steps">
+				${step(1, __("Create a Tarceel account"))}
+				${step(2, __("Paste your Instance ID and API Key below"))}
+				${step(3, __("Click Test Connection"))}
+			</div>
 		</div>
 	`);
 }
@@ -47,23 +57,34 @@ function inject_intro_styles() {
 	if (document.getElementById("tarceel-intro-styles")) return;
 	const css = `
 		.tarceel-intro-card {
-			display: flex; align-items: center; justify-content: space-between; gap: 20px;
-			padding: 18px 20px; margin: 4px 0 18px;
-			background: var(--bg-color, #fff); border: 1px solid var(--border-color, #e5e7eb);
-			border-left: 3px solid #25D366; border-radius: var(--border-radius-lg, 10px);
+			padding: 20px 22px; margin: 6px 0 22px;
+			background: rgba(37, 211, 102, 0.05);
+			border: 1px solid rgba(37, 211, 102, 0.25); border-left: 3px solid #25D366;
+			border-radius: var(--border-radius-lg, 10px);
 		}
+		.tarceel-intro-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 		.tarceel-intro-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
 		.tarceel-intro-icon-tile {
-			flex: 0 0 auto; width: 52px; height: 52px; border-radius: 12px;
+			flex: 0 0 auto; width: 54px; height: 54px; border-radius: 13px;
 			display: inline-flex; align-items: center; justify-content: center;
-			background: var(--control-bg, #f4f5f6); border: 1px solid var(--border-color, #e5e7eb);
-			box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+			background: #fff; border: 1px solid var(--border-color, #e5e7eb);
+			box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
 		}
 		.tarceel-intro-logo { width: 34px; height: 34px; object-fit: contain; display: block; }
-		.tarceel-intro-title { font-weight: 600; font-size: var(--text-lg, 15px); }
-		.tarceel-intro-sub { margin-top: 3px; max-width: 620px; line-height: 1.5; }
+		.tarceel-intro-title { font-weight: 600; font-size: var(--text-xl, 16px); }
+		.tarceel-intro-sub { margin-top: 3px; max-width: 640px; line-height: 1.5; }
 		.tarceel-intro-btn { background: #25D366; border-color: #25D366; color: #fff; font-weight: 600; white-space: nowrap; }
 		.tarceel-intro-btn:hover, .tarceel-intro-btn:focus { background: #1da851; border-color: #1da851; color: #fff; }
+		.tarceel-intro-steps {
+			display: flex; flex-wrap: wrap; gap: 10px 28px;
+			margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(37, 211, 102, 0.2);
+		}
+		.tarceel-intro-step { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-sm, 12px); }
+		.tarceel-step-num {
+			flex: 0 0 auto; width: 21px; height: 21px; border-radius: 50%;
+			display: inline-flex; align-items: center; justify-content: center;
+			background: #25D366; color: #fff; font-size: 11px; font-weight: 600;
+		}
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
