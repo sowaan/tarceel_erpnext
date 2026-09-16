@@ -27,7 +27,7 @@ _HERO_HTML = """
 			</div>
 		</div>
 	</div>
-	<a class="tz-cta" href="/app/tarceel-settings/Tarceel Settings">Open Tarceel Settings</a>
+	<a class="tz-cta" href="/app/tarceel-settings/Tarceel Settings?sidebar=Tarceel">Open Tarceel Settings</a>
 </div>
 """
 
