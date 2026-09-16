@@ -35,46 +35,39 @@ _HERO_STYLE = """
 .tz-hero {
 	display: flex; align-items: center; justify-content: space-between;
 	gap: 24px; flex-wrap: wrap;
-	padding: 22px 26px; border-radius: 16px;
-	background: linear-gradient(120deg, #0b141a 0%, #111b21 45%, #1f6e4d 100%);
-	color: #fff; position: relative; overflow: hidden;
+	padding: 20px 24px; border-radius: 12px;
+	background: linear-gradient(90deg, rgba(37, 211, 102, 0.08), rgba(37, 211, 102, 0.015) 42%, #ffffff 100%);
+	border: 1px solid #e6eaed; border-left: 4px solid #25D366;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-.tz-hero::after {
-	content: ""; position: absolute; right: -50px; top: -60px;
-	width: 240px; height: 240px; pointer-events: none;
-	background: radial-gradient(circle, rgba(37, 211, 102, 0.35), transparent 70%);
-}
-.tz-hero-main { display: flex; align-items: center; gap: 18px; min-width: 0; z-index: 1; }
+.tz-hero-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .tz-badge {
-	flex: 0 0 auto; width: 56px; height: 56px; border-radius: 14px; background: #fff;
+	flex: 0 0 auto; width: 52px; height: 52px; border-radius: 13px;
+	background: #f0fbf5; border: 1px solid rgba(37, 211, 102, 0.25);
 	display: flex; align-items: center; justify-content: center;
-	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
-.tz-badge img { width: 40px; height: 40px; object-fit: contain; }
+.tz-badge img { width: 38px; height: 38px; object-fit: contain; }
 .tz-title {
-	font-size: 24px; font-weight: 700; letter-spacing: 0.2px;
-	display: flex; align-items: center; gap: 10px;
+	font-size: 22px; font-weight: 700; color: #1a2a3a; letter-spacing: 0.2px;
+	display: flex; align-items: center; gap: 9px;
 }
 .tz-pill {
-	font-size: 11.5px; font-weight: 600; background: #25D366; color: #04220f;
-	padding: 3px 10px; border-radius: 999px; letter-spacing: 0.3px;
+	font-size: 10.5px; font-weight: 700; background: #25D366; color: #fff;
+	padding: 3px 9px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase;
 }
 .tz-sub {
-	margin-top: 7px; max-width: 640px; line-height: 1.55;
-	color: rgba(255, 255, 255, 0.82); font-size: 13.5px;
+	margin-top: 5px; max-width: 620px; line-height: 1.5; color: #5e6c84; font-size: 13px;
 }
 .tz-cta {
-	flex: 0 0 auto; z-index: 1;
-	background: #25D366; color: #04220f; font-weight: 600; font-size: 13.5px;
-	padding: 10px 18px; border-radius: 10px; text-decoration: none; white-space: nowrap;
-	box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
-	transition: transform 0.12s ease, background 0.12s ease;
+	flex: 0 0 auto;
+	background: transparent; color: #0f9d58; font-weight: 600; font-size: 13px;
+	padding: 9px 18px; border-radius: 8px; text-decoration: none; white-space: nowrap;
+	border: 1.5px solid #25D366; transition: all 0.12s ease;
 }
-.tz-cta:hover { background: #1ebe5b; color: #04220f; transform: translateY(-1px); }
+.tz-cta:hover { background: #25D366; color: #ffffff; border-color: #25D366; }
 @media (max-width: 640px) {
-	.tz-hero { padding: 18px; }
-	.tz-title { font-size: 20px; }
+	.tz-hero { padding: 16px; }
+	.tz-title { font-size: 19px; }
 	.tz-cta { width: 100%; text-align: center; }
 }
 """
