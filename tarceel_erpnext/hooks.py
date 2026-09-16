@@ -161,6 +161,12 @@ override_doctype_class = {
 	"Notification": "tarceel_erpnext.overrides.notification.TarceelNotification"
 }
 
+# Show linked WhatsApp messages (with delivery status) in every document's
+# activity timeline.
+additional_timeline_content = {
+	"*": ["tarceel_erpnext.timeline.get_timeline_content"]
+}
+
 # Scheduled Tasks
 # ---------------
 
