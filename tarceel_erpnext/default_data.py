@@ -30,6 +30,7 @@ PHONE_FIELD_MAPPINGS = [
 	("Supplier", "mobile_no"),
 	("Lead", "mobile_no"),
 	("Contact", "mobile_no"),
+	("Employee", "cell_number"),
 ]
 
 # template_name, reference_doctype, message (Jinja rendered against `doc`)
