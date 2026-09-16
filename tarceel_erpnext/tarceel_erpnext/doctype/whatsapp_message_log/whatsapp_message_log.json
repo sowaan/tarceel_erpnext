@@ -16,6 +16,7 @@
   "message",
   "media_type",
   "media_filename",
+  "media_url",
   "reference_section",
   "reference_doctype",
   "reference_name",
@@ -84,6 +85,14 @@
    "fieldname": "media_filename",
    "fieldtype": "Data",
    "label": "Media Filename",
+   "read_only": 1
+  },
+  {
+   "depends_on": "media_url",
+   "description": "Link to the sent attachment (openable from the document timeline).",
+   "fieldname": "media_url",
+   "fieldtype": "Data",
+   "label": "Media URL",
    "read_only": 1
   },
   {

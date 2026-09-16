@@ -38,6 +38,12 @@ class TestTimeline(FrappeTestCase):
 		self.assertIn("frappe-timestamp", content)  # native timestamp (hover + auto-refresh)
 		self.assertIn("data-timestamp", content)
 
+	def test_attachment_renders_as_link(self):
+		self._log(media_type="document", media_filename="INV-001.pdf", media_url="/private/files/INV-001.pdf")
+		content = timeline.get_timeline_content("ToDo", self.todo.name)[0]["content"]
+		self.assertIn('href="/private/files/INV-001.pdf"', content)
+		self.assertIn("INV-001.pdf", content)
+
 	def test_unrelated_document_has_no_items(self):
 		self._log()
 		other = frappe.get_doc({"doctype": "ToDo", "description": "other"}).insert()

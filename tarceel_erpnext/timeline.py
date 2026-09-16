@@ -39,6 +39,7 @@ def get_timeline_content(doctype, docname):
 			"direction",
 			"media_type",
 			"media_filename",
+			"media_url",
 			"creation",
 		],
 		order_by="creation asc",
@@ -80,7 +81,11 @@ def _render(log):
 	)
 	media = ""
 	if log.media_type:
-		label = log.media_filename or log.media_type
-		media = f'<div class="small text-muted" style="margin-top:2px">📎 {escape_html(label)}</div>'
+		label = escape_html(log.media_filename or log.media_type)
+		if log.media_url:
+			inner = f'<a href="{escape_html(log.media_url)}" target="_blank" rel="noopener">📎 {label}</a>'
+		else:
+			inner = f"📎 {label}"
+		media = f'<div class="small" style="margin-top:4px">{inner}</div>'
 
 	return f"<div>{header}{body}{media}</div>"
