@@ -33,7 +33,7 @@ function render_intro(frm) {
 		<div class="tarceel-intro-card">
 			<div class="tarceel-intro-header">
 				<div class="tarceel-intro-left">
-					<span class="tarceel-intro-icon-tile"><img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" /></span>
+					<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" />
 					<div>
 						<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
 						<div class="tarceel-intro-sub text-muted">${__(
@@ -64,13 +64,7 @@ function inject_intro_styles() {
 		}
 		.tarceel-intro-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 		.tarceel-intro-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
-		.tarceel-intro-icon-tile {
-			flex: 0 0 auto; width: 54px; height: 54px; border-radius: 13px;
-			display: inline-flex; align-items: center; justify-content: center;
-			background: #fff; border: 1px solid var(--border-color, #e5e7eb);
-			box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
-		}
-		.tarceel-intro-logo { width: 34px; height: 34px; object-fit: contain; display: block; }
+		.tarceel-intro-logo { flex: 0 0 auto; width: 40px; height: 40px; object-fit: contain; }
 		.tarceel-intro-title { font-weight: 600; font-size: var(--text-xl, 16px); }
 		.tarceel-intro-sub { margin-top: 3px; max-width: 640px; line-height: 1.5; }
 		.tarceel-intro-btn { background: #25D366; border-color: #25D366; color: #fff; font-weight: 600; white-space: nowrap; }
