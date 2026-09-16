@@ -18,8 +18,19 @@ tarceel_erpnext.WHATSAPP_ICON = `<svg class="tarceel-wa-ic" viewBox="0 0 24 24" 
 // Bind once, no matter how many times this script is included.
 if (!tarceel_erpnext._send_button_bound) {
 	tarceel_erpnext._send_button_bound = true;
+	// form-refresh fires inside Frappe's run_serially() render chain, before the
+	// page toolbar/menu is fully set up. On v16, calling frm.add_custom_button at
+	// that point throws (page menu not ready) and would break the chain so the
+	// form never renders its fields. Defer to the next tick — the form has
+	// finished rendering by then — and never let our code throw into the host.
 	$(document).on("form-refresh", function (e, frm) {
-		tarceel_erpnext.add_send_button(frm);
+		setTimeout(function () {
+			try {
+				tarceel_erpnext.add_send_button(frm);
+			} catch (err) {
+				console.error("Tarceel: Send WhatsApp button failed", err);
+			}
+		}, 0);
 	});
 }
 

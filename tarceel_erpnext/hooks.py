@@ -31,8 +31,9 @@ app_include_js = [
 	"tarceel_setup_banner.bundle.js",
 ]
 
-# Ship a "whatsapp" icon (used in the document timeline badge).
-app_include_icons = ["tarceel_erpnext/icons/tarceel-icons.svg"]
+# Ship a "whatsapp"/"tarceel" icon sprite (timeline badge + workspace icon).
+# v16 uses the path as-is, so it must include the /assets/ prefix (v15 did not).
+app_include_icons = ["/assets/tarceel_erpnext/icons/tarceel-icons.svg"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/tarceel_erpnext/css/tarceel_erpnext.css"
