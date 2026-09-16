@@ -89,7 +89,11 @@ doctype_js = {"Notification": "public/js/notification.js"}
 # ------------
 
 # before_install = "tarceel_erpnext.install.before_install"
-# after_install = "tarceel_erpnext.install.after_install"
+after_install = "tarceel_erpnext.setup.after_install"
+
+# Run on every `bench migrate` so the WhatsApp channel option is (re)ensured even
+# on sites where the install-time patch was skipped.
+after_migrate = "tarceel_erpnext.setup.after_migrate"
 
 # Uninstallation
 # ------------

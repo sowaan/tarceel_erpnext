@@ -3,26 +3,13 @@
 
 """Add a "WhatsApp" option to Frappe Notification's `channel` field.
 
-Appends to whatever options the framework currently ships (rather than hardcoding
-the full list) so a future core addition isn't dropped. Idempotent —
-make_property_setter updates the existing Property Setter in place.
+Kept for sites that migrate through this patch; the same idempotent logic also
+runs via after_install / after_migrate (tarceel_erpnext.setup) so fresh installs
+that skip patches still get the option.
 """
 
-import frappe
-from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+from tarceel_erpnext.setup import ensure_whatsapp_notification_channel
 
 
 def execute():
-	options = (frappe.get_meta("Notification").get_field("channel").options or "").split("\n")
-	if "WhatsApp" in options:
-		return
-
-	options.append("WhatsApp")
-	make_property_setter(
-		"Notification",
-		"channel",
-		"options",
-		"\n".join(options),
-		"Text",
-		validate_fields_for_doctype=False,
-	)
+	ensure_whatsapp_notification_channel()
