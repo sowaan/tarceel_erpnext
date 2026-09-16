@@ -132,9 +132,8 @@ class TestSendMessage(FrappeTestCase):
 		self.assertTrue(body["base64"])
 		self.assertIn("/messages/media", req.call_args.args[1])
 
-	@mock.patch("tarceel_erpnext.api.save_pdf_as_file", return_value="/private/files/ToDo.pdf")
 	@mock.patch("tarceel_erpnext.client.requests.request")
-	def test_send_with_print_format_sends_pdf(self, req, save_pdf):
+	def test_send_with_print_format_sends_pdf(self, req):
 		req.return_value = _resp(200, {"id": "wamid.PF"})
 		with mock.patch.object(frappe, "get_print", return_value=b"%PDF-1.4 x") as gp:
 			res = api.send_message(
@@ -144,7 +143,7 @@ class TestSendMessage(FrappeTestCase):
 		self.assertTrue(res["ok"])
 		log = frappe.get_doc("WhatsApp Message Log", res["name"])
 		self.assertEqual(log.media_type, "document")
-		self.assertEqual(log.media_url, "/private/files/ToDo.pdf")  # openable from timeline
+		self.assertFalse(log.media_url)  # print PDFs aren't persisted/linked
 		self.assertEqual(req.call_args.kwargs["json"]["mimetype"], "application/pdf")
 
 	@mock.patch("tarceel_erpnext.client.requests.request")

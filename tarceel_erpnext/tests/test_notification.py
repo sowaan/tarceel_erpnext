@@ -103,10 +103,8 @@ class TestWhatsAppNotification(FrappeTestCase):
 	def test_deliver_sends_pdf_as_document(self):
 		# The worker renders the PDF once and sends media with the caption.
 		with mock.patch.object(frappe, "get_print", return_value=b"%PDF-1.4 fake") as gp, mock.patch(
-			"tarceel_erpnext.api.save_pdf_as_file", return_value="/private/files/ToDo.pdf"
-		), mock.patch("tarceel_erpnext.api.send_media_and_log") as sml, mock.patch(
-			"tarceel_erpnext.api.send_and_log"
-		) as sal:
+			"tarceel_erpnext.api.send_media_and_log"
+		) as sml, mock.patch("tarceel_erpnext.api.send_and_log") as sal:
 			notif_mod.deliver(
 				["923001110000"],
 				"Your invoice",

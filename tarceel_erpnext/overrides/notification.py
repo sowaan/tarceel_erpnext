@@ -122,13 +122,10 @@ def deliver(numbers, message, reference_doctype, reference_name, attach_pdf=Fals
 	message as caption when attaching, else as plain text."""
 	pdf_base64 = None
 	filename = None
-	media_url = None
 	if attach_pdf:
 		pdf = frappe.get_print(reference_doctype, reference_name, print_format, as_pdf=True)
 		pdf_base64 = base64.b64encode(pdf).decode()
 		filename = f"{reference_name}.pdf"
-		# Persist once so it's openable from the timeline; reused for every recipient.
-		media_url = api.save_pdf_as_file(pdf, filename, reference_doctype, reference_name)
 
 	for number in numbers:
 		if pdf_base64:
@@ -141,7 +138,6 @@ def deliver(numbers, message, reference_doctype, reference_name, attach_pdf=Fals
 				base64=pdf_base64,
 				mimetype="application/pdf",
 				filename=filename,
-				media_url=media_url,
 			)
 		else:
 			api.send_and_log(number, message, reference_doctype, reference_name)

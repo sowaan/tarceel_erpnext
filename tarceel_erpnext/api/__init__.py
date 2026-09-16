@@ -210,29 +210,12 @@ def send_message(
 	return {"ok": all(r["ok"] for r in results), "count": len(results), "results": results}
 
 
-def save_pdf_as_file(pdf_bytes, filename, reference_doctype=None, reference_name=None):
-	"""Persist generated PDF bytes as a private File (attached to the source doc so
-	it's viewable/openable) and return its file_url."""
-	file_doc = frappe.get_doc(
-		{
-			"doctype": "File",
-			"file_name": filename,
-			"content": pdf_bytes,
-			"is_private": 1,
-			"attached_to_doctype": reference_doctype,
-			"attached_to_name": reference_name,
-		}
-	).insert(ignore_permissions=True)
-	return file_doc.file_url
-
-
 def _send_print(number, caption, reference_doctype, reference_name, print_format):
-	"""Render the source document with the given Print Format and send the PDF."""
+	"""Render the source document with the given Print Format and send the PDF.
+	The generated PDF is not persisted (nothing to open from the timeline)."""
 	if not (reference_doctype and reference_name):
 		frappe.throw(_("A source document is required to attach a print format."), TarceelError)
 	pdf = frappe.get_print(reference_doctype, reference_name, print_format or None, as_pdf=True)
-	filename = f"{reference_name}.pdf"
-	media_url = save_pdf_as_file(pdf, filename, reference_doctype, reference_name)
 	return send_media_and_log(
 		number,
 		"document",
@@ -241,8 +224,7 @@ def _send_print(number, caption, reference_doctype, reference_name, print_format
 		reference_name=reference_name,
 		base64=base64.b64encode(pdf).decode(),
 		mimetype="application/pdf",
-		filename=filename,
-		media_url=media_url,
+		filename=f"{reference_name}.pdf",
 	)
 
 
