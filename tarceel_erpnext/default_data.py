@@ -159,8 +159,9 @@ def _field_exists(doctype, path):
 
 def _resolve_print_format(doctype):
 	"""A real Print Format name for `doctype`, or None. Prefer the DocType's
-	default; otherwise the first enabled format. Never returns the built-in
-	"Standard" (not a Print Format record, so it can't be a valid Link value)."""
+	default; otherwise a customer-facing "print"/"standard" format; otherwise the
+	first enabled one. Never returns the built-in "Standard" (not a Print Format
+	record, so it can't be a valid Link value)."""
 	default = frappe.get_meta(doctype).default_print_format
 	if default and frappe.db.exists("Print Format", default):
 		return default
@@ -169,9 +170,13 @@ def _resolve_print_format(doctype):
 		filters={"doc_type": doctype, "disabled": 0},
 		order_by="creation asc",
 		pluck="name",
-		limit=1,
 	)
-	return names[0] if names else None
+	if not names:
+		return None
+	# No site default set — prefer a customer-facing format over niche ones
+	# (auditing, drop-ship) that can happen to sort first.
+	preferred = [n for n in names if any(w in n.lower() for w in ("standard", "print"))]
+	return preferred[0] if preferred else names[0]
 
 
 def seed_default_data():
