@@ -16,22 +16,28 @@ function render_intro(frm) {
 	const field = frm.get_field("disclosure_html");
 	if (!field) return;
 
-	const disclosure = `<div class="text-muted small" style="margin-bottom:0">${__(
+	const disclosure = `<div class="tarceel-disclosure text-muted small"><span class="tarceel-disclosure-ic">&#9432;</span>${__(
 		"Unofficial, QR-linked WhatsApp integration — not the official WhatsApp Business Platform."
 	)}</div>`;
 
 	const configured = frm.doc.instance_id && frm.doc.__onload && frm.doc.__onload.has_api_key;
 	if (configured) {
-		// Show the disclosure; if the live connection is unhealthy, show a status
-		// card above it (so the problem surfaces here, not just on the Desk banner).
-		field.html(disclosure);
+		// Always show the live connection status here (connected or not), then the
+		// disclosure below it.
+		field.html(
+			`<div class="tarceel-conn-card tarceel-conn-card--checking"><div class="tarceel-conn-left"><span class="tarceel-conn-dot"></span><div class="tarceel-conn-title">${__(
+				"Checking connection…"
+			)}</div></div></div>` + disclosure
+		);
 		frappe.call({
 			method: "tarceel_erpnext.api.get_setup_status",
 			callback(r) {
 				const s = r.message || {};
-				if (s.connection && !s.connection.ok) {
-					field.html(connection_problem_card(s.connection.message) + disclosure);
+				if (s.connection) {
+					field.html(connection_status_card(s.connection) + disclosure);
 					field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
+				} else {
+					field.html(disclosure);
 				}
 			},
 		});
@@ -65,14 +71,17 @@ function render_intro(frm) {
 	`);
 }
 
-function connection_problem_card(message) {
+function connection_status_card(conn) {
+	const ok = !!conn.ok;
+	const variant = ok ? "tarceel-conn-card--ok" : "tarceel-conn-card--warn";
+	const title = ok ? __("WhatsApp connected") : __("WhatsApp not connected");
 	return `
-		<div class="tarceel-conn-card">
+		<div class="tarceel-conn-card ${variant}">
 			<div class="tarceel-conn-left">
 				<span class="tarceel-conn-dot"></span>
 				<div>
-					<div class="tarceel-conn-title">${__("WhatsApp connection problem")}</div>
-					<div class="tarceel-conn-msg text-muted">${frappe.utils.escape_html(message || "")}</div>
+					<div class="tarceel-conn-title">${title}</div>
+					<div class="tarceel-conn-msg text-muted">${frappe.utils.escape_html(conn.message || "")}</div>
 				</div>
 			</div>
 			<button class="btn btn-sm tarceel-recheck-btn">${__("Test Connection")}</button>
@@ -107,13 +116,19 @@ function inject_intro_styles() {
 		}
 		.tarceel-conn-card {
 			display: flex; align-items: center; justify-content: space-between; gap: 16px;
-			padding: 14px 16px; margin: 6px 0 14px; border-radius: var(--border-radius-lg, 10px);
-			background: var(--yellow-50, #fff8e6); border: 1px solid #f0d48a; border-left: 3px solid #e8a33d;
+			padding: 14px 16px; margin: 4px 0 14px; border-radius: var(--border-radius-lg, 10px);
+			border: 1px solid var(--border-color, #e5e7eb); border-left: 3px solid #ccc;
 		}
+		.tarceel-conn-card--ok { background: rgba(37, 211, 102, 0.06); border-color: rgba(37, 211, 102, 0.3); border-left-color: #25D366; }
+		.tarceel-conn-card--warn { background: var(--yellow-50, #fff8e6); border-color: #f0d48a; border-left-color: #e8a33d; }
 		.tarceel-conn-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-		.tarceel-conn-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #e8a33d; }
+		.tarceel-conn-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #b7bcc4; }
+		.tarceel-conn-card--ok .tarceel-conn-dot { background: #25D366; }
+		.tarceel-conn-card--warn .tarceel-conn-dot { background: #e8a33d; }
 		.tarceel-conn-title { font-weight: 600; }
 		.tarceel-conn-msg { margin-top: 2px; }
+		.tarceel-disclosure { display: flex; align-items: center; gap: 6px; margin: 6px 0 22px; }
+		.tarceel-disclosure-ic { opacity: 0.55; font-size: 13px; }
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
