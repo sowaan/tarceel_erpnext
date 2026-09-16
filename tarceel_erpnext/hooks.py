@@ -15,7 +15,7 @@ app_license = "mit"
 add_to_apps_screen = [
 	{
 		"name": "tarceel_erpnext",
-		"logo": "/assets/tarceel_erpnext/images/tarceel_icon.png",
+		"logo": "/assets/tarceel_erpnext/images/tarceel_icon_sm.png",
 		"title": "Tarceel",
 		"route": "/app/tarceel",
 	}
