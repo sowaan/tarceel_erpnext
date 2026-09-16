@@ -87,11 +87,24 @@ def ensure_workspace_hero():
 			doc.style = style
 			doc.private = 0
 			doc.save(ignore_permissions=True)
-		return
+	else:
+		doc = frappe.get_doc(
+			{"doctype": "Custom HTML Block", "html": html, "style": style, "private": 0}
+		)
+		doc.name = HERO_BLOCK_NAME
+		doc.flags.name_set = True  # autoname is "prompt" — use our fixed name
+		doc.insert(ignore_permissions=True)
 
-	doc = frappe.get_doc(
-		{"doctype": "Custom HTML Block", "html": html, "style": style, "private": 0}
-	)
-	doc.name = HERO_BLOCK_NAME
-	doc.flags.name_set = True  # autoname is "prompt" — use our fixed name
-	doc.insert(ignore_permissions=True)
+	_ensure_workspace_references_hero()
+
+
+def _ensure_workspace_references_hero():
+	"""Point the Tarceel workspace at the hero block. Frappe won't re-import an
+	existing workspace's content on migrate, so a site that predates the hero
+	keeps its old content; reload it from the shipped JSON once, when it doesn't
+	reference the block yet."""
+	if not frappe.db.exists("Workspace", "Tarceel"):
+		return
+	content = frappe.db.get_value("Workspace", "Tarceel", "content") or ""
+	if HERO_BLOCK_NAME not in content:
+		frappe.reload_doc("tarceel_erpnext", "workspace", "tarceel", force=True)
