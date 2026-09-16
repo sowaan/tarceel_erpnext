@@ -38,6 +38,9 @@ tarceel_erpnext.add_send_button = function (frm) {
 	// Need a saved document so the message has something to link back to.
 	if (!frm || frm.is_new()) return;
 	if (tarceel_erpnext.SEND_BUTTON_EXCLUDE.has(frm.doctype)) return;
+	// Only offer the button to users allowed to send (create a WhatsApp Message
+	// Log) — the WhatsApp Sender role, or System Manager. Mirrors the server gate.
+	if (!frappe.model.can_create("WhatsApp Message Log")) return;
 
 	const $btn = frm.add_custom_button(__("WhatsApp"), function () {
 		tarceel_erpnext.open_send_dialog(frm);

@@ -28,6 +28,12 @@ def get_timeline_content(doctype, docname):
 	if doctype == "WhatsApp Message Log":
 		return []
 
+	# Viewing WhatsApp history is gated on read access to the log (the WhatsApp
+	# Viewer/Sender roles, or System Manager) — message bodies can be sensitive,
+	# so users who can open the document but lack that access see no entries.
+	if not frappe.has_permission("WhatsApp Message Log", "read"):
+		return []
+
 	logs = frappe.get_all(
 		"WhatsApp Message Log",
 		filters={"reference_doctype": doctype, "reference_name": docname},
