@@ -29,7 +29,7 @@ function render_intro(frm) {
 	field.html(`
 		<div class="tarceel-intro-card">
 			<div class="tarceel-intro-left">
-				<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" />
+				<span class="tarceel-intro-icon-tile"><img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" /></span>
 				<div>
 					<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
 					<div class="tarceel-intro-sub text-muted">${__(
@@ -47,15 +47,21 @@ function inject_intro_styles() {
 	if (document.getElementById("tarceel-intro-styles")) return;
 	const css = `
 		.tarceel-intro-card {
-			display: flex; align-items: center; justify-content: space-between; gap: 16px;
-			padding: 14px 16px; margin-bottom: 4px;
+			display: flex; align-items: center; justify-content: space-between; gap: 20px;
+			padding: 18px 20px; margin: 4px 0 18px;
 			background: var(--bg-color, #fff); border: 1px solid var(--border-color, #e5e7eb);
-			border-left: 3px solid #25D366; border-radius: var(--border-radius-md, 8px);
+			border-left: 3px solid #25D366; border-radius: var(--border-radius-lg, 10px);
 		}
-		.tarceel-intro-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-		.tarceel-intro-logo { flex: 0 0 auto; width: 40px; height: 40px; object-fit: contain; }
+		.tarceel-intro-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+		.tarceel-intro-icon-tile {
+			flex: 0 0 auto; width: 52px; height: 52px; border-radius: 12px;
+			display: inline-flex; align-items: center; justify-content: center;
+			background: var(--control-bg, #f4f5f6); border: 1px solid var(--border-color, #e5e7eb);
+			box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		}
+		.tarceel-intro-logo { width: 34px; height: 34px; object-fit: contain; display: block; }
 		.tarceel-intro-title { font-weight: 600; font-size: var(--text-lg, 15px); }
-		.tarceel-intro-sub { margin-top: 2px; max-width: 620px; }
+		.tarceel-intro-sub { margin-top: 3px; max-width: 620px; line-height: 1.5; }
 		.tarceel-intro-btn { background: #25D366; border-color: #25D366; color: #fff; font-weight: 600; white-space: nowrap; }
 		.tarceel-intro-btn:hover, .tarceel-intro-btn:focus { background: #1da851; border-color: #1da851; color: #fff; }
 	`;
