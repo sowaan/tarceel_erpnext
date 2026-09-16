@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Sowaan and contributors
 // For license information, please see license.txt
 
-const TARCEEL_ICON = "/assets/tarceel_erpnext/images/tarceel_icon.png";
+const TARCEEL_ICON = "/assets/tarceel_erpnext/images/tarceel_icon_sm.png";
 
 frappe.ui.form.on("Tarceel Settings", {
 	refresh(frm) {
