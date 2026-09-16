@@ -5,6 +5,13 @@ frappe.ui.form.on("Tarceel Settings", {
 	refresh(frm) {
 		frm.add_custom_button(__("Test Connection"), () => test_connection(frm));
 		frm.add_custom_button(__("Configure Webhook"), () => configure_webhook(frm));
+
+		// Prominent account-creation action, shown until credentials are set.
+		if (!frm.doc.instance_id || !frm.doc.__onload?.has_api_key) {
+			frm.add_custom_button(__("Create Tarceel Account"), () => {
+				window.open("https://app.tarceel.com", "_blank", "noopener");
+			}).addClass("btn-primary");
+		}
 	},
 });
 

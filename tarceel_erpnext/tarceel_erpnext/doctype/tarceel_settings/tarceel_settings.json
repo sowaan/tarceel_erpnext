@@ -23,7 +23,7 @@
    "fieldname": "disclosure_html",
    "fieldtype": "HTML",
    "label": "About",
-   "options": "<div class=\"alert alert-warning\" style=\"margin-bottom:0;\"><strong>Unofficial WhatsApp integration.</strong> Tarceel is an unofficial, QR-linked WhatsApp integration &mdash; <strong>not</strong> the official WhatsApp Business Platform, and not affiliated with or endorsed by WhatsApp or Meta. It links a real WhatsApp number via QR code, so that number can be rate-limited or banned if used for unsolicited or bulk messaging. This app sends only per-document, individually composed messages and never bypasses Tarceel's rate-limiting / anti-ban safety.</div>"
+   "options": "<div class=\"text-muted small\" style=\"margin-bottom:0;\">Unofficial, QR-linked WhatsApp integration &mdash; not the official WhatsApp Business Platform, and not affiliated with WhatsApp or Meta. Don't have an account? <a href=\"https://app.tarceel.com\" target=\"_blank\" rel=\"noopener\">Create a Tarceel account</a>.</div>"
   },
   {
    "default": "1",
