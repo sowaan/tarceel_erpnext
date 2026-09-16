@@ -1,5 +1,8 @@
 ## Tarceel for Frappe (`tarceel_erpnext`)
 
+> **Branch:** `version-16` — targets **Frappe/ERPNext v16**. Frappe v16 requires **Node ≥ 24**
+> and **Python 3.14**. For Frappe/ERPNext v15, use the `main` branch (Node 18, Python 3.10+).
+
 Send and receive WhatsApp messages from any Frappe / ERPNext document through your own
 [Tarceel](https://app.tarceel.com) account — natively, the way Frappe's built-in Email Account and
 Notification system already work. Install the app, paste your Tarceel instance API key into

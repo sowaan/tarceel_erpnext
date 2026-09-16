@@ -28,6 +28,10 @@ def _sign(secret, body):
 class TestWebhook(FrappeTestCase):
 	def setUp(self):
 		settings = frappe.get_single("Tarceel Settings")
+		# instance_id / api_key are mandatory — set them so a fresh (empty) single saves.
+		settings.base_url = "https://api.example.test"
+		settings.instance_id = "inst_123"
+		settings.api_key = _SECRET
 		settings.webhook_secret = _SECRET
 		settings.save()
 		frappe.clear_cache(doctype="Tarceel Settings")
