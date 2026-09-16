@@ -10,16 +10,16 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "tarceel_erpnext",
-# 		"logo": "/assets/tarceel_erpnext/logo.png",
-# 		"title": "Tarceel Erpnext",
-# 		"route": "/tarceel_erpnext",
-# 		"has_permission": "tarceel_erpnext.api.permission.has_app_permission"
-# 	}
-# ]
+# Register the app (with its logo) on the apps screen. v16 also uses this logo
+# for the workspace's sidebar header icon — without it, a letter-avatar shows.
+add_to_apps_screen = [
+	{
+		"name": "tarceel_erpnext",
+		"logo": "/assets/tarceel_erpnext/images/tarceel_icon.png",
+		"title": "Tarceel",
+		"route": "/app/tarceel",
+	}
+]
 
 # Includes in <head>
 # ------------------

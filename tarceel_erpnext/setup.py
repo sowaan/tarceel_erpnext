@@ -30,9 +30,28 @@ def ensure_whatsapp_notification_channel():
 	frappe.clear_cache(doctype="Notification")
 
 
+def ensure_tarceel_desktop_icon_app():
+	"""Set `app` on the Tarceel workspace's Desktop Icon (v16 only).
+
+	v16 renders the workspace's sidebar-header icon from
+	public/icons/desktop_icons/<variant>/tarceel.svg, but only when the Desktop
+	Icon record has its `app` set. It can be left null (e.g. the record was synced
+	before the workspace's app field existed), which falls back to a letter-avatar.
+	"""
+	if not frappe.db.exists("DocType", "Desktop Icon"):
+		return  # not v16
+	for name in frappe.get_all(
+		"Desktop Icon", filters={"label": "Tarceel", "app": ["in", ["", None]]}, pluck="name"
+	):
+		frappe.db.set_value("Desktop Icon", name, "app", "tarceel_erpnext")
+		frappe.cache.hdel("desktop_icons", "Administrator")
+
+
 def after_install():
 	ensure_whatsapp_notification_channel()
+	ensure_tarceel_desktop_icon_app()
 
 
 def after_migrate():
 	ensure_whatsapp_notification_channel()
+	ensure_tarceel_desktop_icon_app()
