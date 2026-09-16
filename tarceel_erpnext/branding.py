@@ -36,31 +36,34 @@ _HERO_STYLE = """
 	display: flex; align-items: center; justify-content: space-between;
 	gap: 24px; flex-wrap: wrap;
 	padding: 20px 24px; border-radius: 12px;
-	background: linear-gradient(90deg, rgba(37, 211, 102, 0.08), rgba(37, 211, 102, 0.015) 42%, #ffffff 100%);
-	border: 1px solid #e6eaed; border-left: 4px solid #25D366;
+	/* Faint green wash over the theme card colour, so it adapts to light/dark. */
+	background: linear-gradient(90deg, rgba(37, 211, 102, 0.09), rgba(37, 211, 102, 0) 45%),
+		var(--card-bg, #ffffff);
+	border: 1px solid var(--border-color, #e6eaed);
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 .tz-hero-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .tz-badge {
 	flex: 0 0 auto; width: 52px; height: 52px; border-radius: 13px;
-	background: #f0fbf5; border: 1px solid rgba(37, 211, 102, 0.25);
+	background: rgba(37, 211, 102, 0.12); border: 1px solid rgba(37, 211, 102, 0.3);
 	display: flex; align-items: center; justify-content: center;
 }
 .tz-badge img { width: 38px; height: 38px; object-fit: contain; }
 .tz-title {
-	font-size: 22px; font-weight: 700; color: #1a2a3a; letter-spacing: 0.2px;
+	font-size: 22px; font-weight: 700; color: var(--text-color, #1a2a3a); letter-spacing: 0.2px;
 	display: flex; align-items: center; gap: 9px;
 }
 .tz-pill {
-	font-size: 10.5px; font-weight: 700; background: #25D366; color: #fff;
+	font-size: 10.5px; font-weight: 700; background: #25D366; color: #ffffff;
 	padding: 3px 9px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase;
 }
 .tz-sub {
-	margin-top: 5px; max-width: 620px; line-height: 1.5; color: #5e6c84; font-size: 13px;
+	margin-top: 5px; max-width: 620px; line-height: 1.5;
+	color: var(--text-muted, #5e6c84); font-size: 13px;
 }
 .tz-cta {
 	flex: 0 0 auto;
-	background: transparent; color: #0f9d58; font-weight: 600; font-size: 13px;
+	background: transparent; color: #22c55e; font-weight: 600; font-size: 13px;
 	padding: 9px 18px; border-radius: 8px; text-decoration: none; white-space: nowrap;
 	border: 1.5px solid #25D366; transition: all 0.12s ease;
 }
