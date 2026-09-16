@@ -35,7 +35,8 @@ class TestTimeline(FrappeTestCase):
 		self.assertIn("Hello there", content)
 		self.assertIn("Delivered", content)  # delivery status pill
 		self.assertIn("923001234567", content)
-		self.assertIn("ago", content)  # relative timestamp
+		self.assertIn("frappe-timestamp", content)  # native timestamp (hover + auto-refresh)
+		self.assertIn("data-timestamp", content)
 
 	def test_unrelated_document_has_no_items(self):
 		self._log()

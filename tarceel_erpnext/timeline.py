@@ -10,7 +10,7 @@ delivery status — the way emails appear in the Communication timeline.
 
 import frappe
 from frappe import _
-from frappe.utils import escape_html, pretty_date
+from frappe.utils import escape_html, format_datetime, pretty_date
 
 # WhatsApp Message Log status -> Frappe indicator-pill colour.
 _STATUS_COLOR = {
@@ -60,9 +60,16 @@ def _render(log):
 		pill = f'<span class="indicator-pill {color}" style="margin-left:6px">{escape_html(log.status)}</span>'
 
 	link = f"/app/whatsapp-message-log/{log.name}"
-	# Cards don't get Frappe's auto timestamp, so add it here (relative, like the
-	# rest of the timeline).
-	when = f'<span class="text-muted" style="margin-left:6px">· {escape_html(pretty_date(log.creation))}</span>'
+	# Cards don't get Frappe's auto timestamp, so emit the same markup it uses: a
+	# .frappe-timestamp span that Frappe refreshes to "Today/Yesterday/… ago" and
+	# whose title shows the exact date/time on hover.
+	ts = str(log.creation)
+	when = (
+		f'<span class="text-muted" style="margin-left:6px">· '
+		f'<span class="frappe-timestamp" data-timestamp="{escape_html(ts)}" '
+		f'title="{escape_html(format_datetime(log.creation))}">'
+		f"{escape_html(pretty_date(log.creation))}</span></span>"
+	)
 	header = (
 		f'<span><b>WhatsApp</b> {verb} '
 		f'<a href="{link}">{escape_html(log.recipient or "")}</a>{pill}{when}</span>'
