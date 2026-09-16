@@ -1,16 +1,13 @@
 {
- "charts": [],
- "content": "[{\"id\":\"tar_hdr1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Tarceel</b></span>\",\"col\":12}},{\"id\":\"tar_sc1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tarceel Settings\",\"col\":3}},{\"id\":\"tar_sc2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"WhatsApp Message Log\",\"col\":3}},{\"id\":\"tar_sc3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"WhatsApp Message Template\",\"col\":3}},{\"id\":\"tar_hdr2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters &amp; Settings</b></span>\",\"col\":12}},{\"id\":\"tar_card1\",\"type\":\"card\",\"data\":{\"card_name\":\"WhatsApp\",\"col\":4}}]",
- "creation": "2026-09-16 00:00:00",
- "custom_blocks": [],
- "docstatus": 0,
  "doctype": "Workspace",
- "for_user": "",
- "hide_custom": 0,
- "icon": "tarceel",
- "idx": 0,
- "is_hidden": 0,
+ "name": "Tarceel",
  "label": "Tarceel",
+ "title": "Tarceel",
+ "module": "Tarceel Erpnext",
+ "public": 1,
+ "icon": "tarceel",
+ "sequence_id": 1.0,
+ "content": "[{\"id\":\"tar_hero\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Tarceel \\u2014 WhatsApp for your documents</b></span>\",\"col\":12}},{\"id\":\"tar_intro\",\"type\":\"paragraph\",\"data\":{\"text\":\"Send &amp; receive WhatsApp messages from any document \\u2014 manually, from templates, or automatically via notifications, with delivery status right on the document timeline. New here? Open <b>Tarceel Settings</b> and connect your Tarceel account to get started.\",\"col\":12}},{\"id\":\"tar_sp1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"tar_qa\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Quick Access</b></span>\",\"col\":12}},{\"id\":\"tar_sc1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tarceel Settings\",\"col\":3}},{\"id\":\"tar_sc2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"WhatsApp Message Log\",\"col\":3}},{\"id\":\"tar_sc3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"WhatsApp Message Template\",\"col\":3}},{\"id\":\"tar_sp2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"tar_mng\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Manage</b></span>\",\"col\":12}},{\"id\":\"tar_card1\",\"type\":\"card\",\"data\":{\"card_name\":\"WhatsApp\",\"col\":4}}]",
  "links": [
   {
    "hidden": 0,
@@ -18,7 +15,8 @@
    "label": "WhatsApp",
    "link_count": 0,
    "onboard": 0,
-   "type": "Card Break"
+   "type": "Card Break",
+   "doctype": "Workspace Link"
   },
   {
    "dependencies": "",
@@ -29,7 +27,8 @@
    "link_to": "Tarceel Settings",
    "link_type": "DocType",
    "onboard": 0,
-   "type": "Link"
+   "type": "Link",
+   "doctype": "Workspace Link"
   },
   {
    "dependencies": "",
@@ -40,7 +39,8 @@
    "link_to": "WhatsApp Message Log",
    "link_type": "DocType",
    "onboard": 0,
-   "type": "Link"
+   "type": "Link",
+   "doctype": "Workspace Link"
   },
   {
    "dependencies": "",
@@ -51,7 +51,8 @@
    "link_to": "WhatsApp Message Template",
    "link_type": "DocType",
    "onboard": 0,
-   "type": "Link"
+   "type": "Link",
+   "doctype": "Workspace Link"
   },
   {
    "dependencies": "",
@@ -62,40 +63,51 @@
    "link_to": "Notification",
    "link_type": "DocType",
    "onboard": 0,
-   "type": "Link"
+   "type": "Link",
+   "doctype": "Workspace Link"
   }
  ],
- "modified": "2026-09-16 11:42:55.302986",
- "modified_by": "Administrator",
- "module": "Tarceel Erpnext",
- "name": "Tarceel",
- "number_cards": [],
- "owner": "Administrator",
- "parent_page": "",
- "public": 1,
- "quick_lists": [],
- "restrict_to_domain": "",
- "roles": [],
- "sequence_id": 1.0,
  "shortcuts": [
   {
    "color": "Blue",
    "label": "Tarceel Settings",
    "link_to": "Tarceel Settings",
-   "type": "DocType"
+   "type": "DocType",
+   "doctype": "Workspace Shortcut"
   },
   {
    "color": "Green",
+   "format": "{} Messages",
    "label": "WhatsApp Message Log",
    "link_to": "WhatsApp Message Log",
-   "type": "DocType"
+   "stats_filter": "{}",
+   "type": "DocType",
+   "doctype": "Workspace Shortcut"
   },
   {
    "color": "Orange",
+   "format": "{} Templates",
    "label": "WhatsApp Message Template",
    "link_to": "WhatsApp Message Template",
-   "type": "DocType"
+   "stats_filter": "{}",
+   "type": "DocType",
+   "doctype": "Workspace Shortcut"
   }
  ],
- "title": "Tarceel"
+ "charts": [],
+ "custom_blocks": [],
+ "docstatus": 0,
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "is_hidden": 0,
+ "number_cards": [],
+ "parent_page": "",
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "creation": "2026-09-16 00:00:00.000000",
+ "modified": "2026-09-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
 }
