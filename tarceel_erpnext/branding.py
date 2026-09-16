@@ -95,16 +95,20 @@ def ensure_workspace_hero():
 		doc.flags.name_set = True  # autoname is "prompt" — use our fixed name
 		doc.insert(ignore_permissions=True)
 
-	_ensure_workspace_references_hero()
+	_ensure_workspace_matches_shipped()
 
 
-def _ensure_workspace_references_hero():
-	"""Point the Tarceel workspace at the hero block. Frappe won't re-import an
-	existing workspace's content on migrate, so a site that predates the hero
-	keeps its old content; reload it from the shipped JSON once, when it doesn't
-	reference the block yet."""
+def _ensure_workspace_matches_shipped():
+	"""Keep the Tarceel workspace in sync with the shipped JSON.
+
+	Frappe won't re-import an existing workspace's content on migrate, so a site
+	can drift: it may keep pre-hero content, or lose its `module` (which drops the
+	workspace from the desk sidebar's page list, breaking the app-icon route with
+	"Icon is not correctly configured"). Reload from the shipped JSON whenever it
+	has drifted — this restores content (incl. the hero), module, app and type."""
 	if not frappe.db.exists("Workspace", "Tarceel"):
 		return
-	content = frappe.db.get_value("Workspace", "Tarceel", "content") or ""
-	if HERO_BLOCK_NAME not in content:
+	current = frappe.db.get_value("Workspace", "Tarceel", ["content", "module"], as_dict=True)
+	drifted = HERO_BLOCK_NAME not in (current.content or "") or current.module != "Tarceel Erpnext"
+	if drifted:
 		frappe.reload_doc("tarceel_erpnext", "workspace", "tarceel", force=True)
