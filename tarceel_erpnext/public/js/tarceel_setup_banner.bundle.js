@@ -44,6 +44,10 @@ tarceel_erpnext.render_setup_banner = function () {
 	if (!s.can_manage || s.configured) return; // only those who can fix it, only if unset
 	if (sessionStorage.getItem("tarceel_setup_banner_dismissed")) return;
 
+	// Don't nag on the Tarceel Settings page itself — the user is already there.
+	const route = (frappe.get_route() || []).join("/").toLowerCase();
+	if (route.includes("tarceel settings") || route.includes("tarceel-settings")) return;
+
 	// The active page's content column (right of the sidebar).
 	const $wrapper = $("#body .page-container:visible .layout-main-section-wrapper").last();
 	if (!$wrapper.length) return;
