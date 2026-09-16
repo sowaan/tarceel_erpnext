@@ -6,6 +6,8 @@
 import frappe
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
+from tarceel_erpnext.default_data import seed_default_data
+
 
 def ensure_whatsapp_notification_channel():
 	"""Ensure Frappe's Notification `channel` field offers a "WhatsApp" option.
@@ -50,8 +52,10 @@ def ensure_tarceel_desktop_icon_app():
 def after_install():
 	ensure_whatsapp_notification_channel()
 	ensure_tarceel_desktop_icon_app()
+	seed_default_data()
 
 
 def after_migrate():
 	ensure_whatsapp_notification_channel()
 	ensure_tarceel_desktop_icon_app()
+	seed_default_data()

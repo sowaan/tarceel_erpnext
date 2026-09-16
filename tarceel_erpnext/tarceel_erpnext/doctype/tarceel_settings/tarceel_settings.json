@@ -16,7 +16,8 @@
   "webhook_url",
   "webhook_secret",
   "recipients_section",
-  "phone_field_mappings"
+  "phone_field_mappings",
+  "default_data_seeded"
  ],
  "fields": [
   {
@@ -99,6 +100,16 @@
    "fieldtype": "Table",
    "label": "Phone Field Mappings",
    "options": "WhatsApp Phone Field Mapping"
+  },
+  {
+   "default": "0",
+   "description": "Set once the default ERPNext phone mappings and sample templates have been seeded, so they are not re-created (respecting any you delete).",
+   "fieldname": "default_data_seeded",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Default Data Seeded",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "issingle": 1,
