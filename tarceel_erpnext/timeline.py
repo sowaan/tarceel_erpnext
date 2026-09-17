@@ -58,9 +58,16 @@ def get_timeline_content(doctype, docname):
 	]
 
 
+def _actor(owner):
+	"""Render the acting user the way Frappe's own timeline does: "You" for the
+	current viewer, otherwise a link to the user showing their full name."""
+	if owner == frappe.session.user:
+		return _("You")
+	return f'<a href="/app/user/{escape_html(owner)}">{escape_html(get_fullname(owner))}</a>'
+
+
 def _render(log):
 	incoming = log.direction == "Incoming"
-	verb = _("received from") if incoming else _("sent to")
 
 	pill = ""
 	if not incoming and log.status:
@@ -78,15 +85,15 @@ def _render(log):
 		f'title="{escape_html(format_datetime(log.creation))}">'
 		f"{escape_html(pretty_date(log.creation))}</span></span>"
 	)
-	# Show who performed the send (the log's owner). Inbound messages have no
-	# meaningful actor (they arrive via the webhook), so only annotate outgoing.
-	actor = ""
-	if not incoming and log.owner:
-		actor = f' {_("by")} <b>{escape_html(get_fullname(log.owner))}</b>'
-	header = (
-		f'<span><b>WhatsApp</b> {verb} '
-		f'<a href="{link}">{escape_html(log.recipient or "")}</a>{actor}{pill}{when}</span>'
-	)
+	# Match Frappe's own timeline sequence: actor first, then the action
+	# (e.g. "{user} created this"). Inbound messages arrive via the webhook, so
+	# they have no meaningful actor and read "WhatsApp received from …".
+	recipient = f'<a href="{link}">{escape_html(log.recipient or "")}</a>'
+	if incoming:
+		line = _("<b>WhatsApp</b> received from {0}").format(recipient)
+	else:
+		line = _("{0} sent a <b>WhatsApp</b> to {1}").format(_actor(log.owner), recipient)
+	header = f"<span>{line}{pill}{when}</span>"
 	body = (
 		f'<div class="text-muted" style="margin-top:4px;white-space:pre-wrap">'
 		f'{escape_html(log.message or "")}</div>'
