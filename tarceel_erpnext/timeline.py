@@ -10,7 +10,7 @@ delivery status — the way emails appear in the Communication timeline.
 
 import frappe
 from frappe import _
-from frappe.utils import escape_html, format_datetime, pretty_date
+from frappe.utils import escape_html, format_datetime, get_fullname, pretty_date
 
 # WhatsApp Message Log status -> Frappe indicator-pill colour.
 _STATUS_COLOR = {
@@ -46,6 +46,7 @@ def get_timeline_content(doctype, docname):
 			"media_type",
 			"media_filename",
 			"media_url",
+			"owner",
 			"creation",
 		],
 		order_by="creation asc",
@@ -77,9 +78,14 @@ def _render(log):
 		f'title="{escape_html(format_datetime(log.creation))}">'
 		f"{escape_html(pretty_date(log.creation))}</span></span>"
 	)
+	# Show who performed the send (the log's owner). Inbound messages have no
+	# meaningful actor (they arrive via the webhook), so only annotate outgoing.
+	actor = ""
+	if not incoming and log.owner:
+		actor = f' {_("by")} <b>{escape_html(get_fullname(log.owner))}</b>'
 	header = (
 		f'<span><b>WhatsApp</b> {verb} '
-		f'<a href="{link}">{escape_html(log.recipient or "")}</a>{pill}{when}</span>'
+		f'<a href="{link}">{escape_html(log.recipient or "")}</a>{actor}{pill}{when}</span>'
 	)
 	body = (
 		f'<div class="text-muted" style="margin-top:4px;white-space:pre-wrap">'
