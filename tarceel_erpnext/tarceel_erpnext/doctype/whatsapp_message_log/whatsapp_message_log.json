@@ -54,7 +54,7 @@
    "options": "Pending\nSent\nDelivered\nRead\nFailed"
   },
   {
-   "description": "The message id returned by Tarceel; status webhooks (Phase 4) refer back to it.",
+   "description": "The message id returned by Tarceel; status webhooks refer back to it.",
    "fieldname": "message_id",
    "fieldtype": "Data",
    "in_list_view": 1,
