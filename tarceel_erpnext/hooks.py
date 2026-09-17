@@ -1,5 +1,5 @@
 app_name = "tarceel_erpnext"
-app_title = "Tarceel Erpnext"
+app_title = "Tarceel"
 app_publisher = "Sowaan"
 app_description = "Custom ERPNext app for Tarceel"
 app_email = "mubashir.abbasi@ahsaic.org"
