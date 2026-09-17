@@ -34,32 +34,47 @@ def ensure_whatsapp_notification_channel():
 
 
 def ensure_tarceel_desktop_icon():
-	"""Collapse the desk icon to a single "Tarceel" app icon (v16 only).
+	"""Ensure a single top-level "Tarceel" desk icon that opens the workspace in
+	the same tab and shows the logo (v16 only).
 
-	`app_title` was once "Tarceel Erpnext" while the workspace is "Tarceel", so
-	Frappe generated a "Tarceel Erpnext" app *folder* holding a letter-avatar
-	"Tarceel" child (clicking opened a popup instead of the workspace). Now that
-	app_title is "Tarceel", it matches the workspace name, so regenerating yields
-	one "Tarceel" app icon with the logo that opens the workspace directly. Only
-	acts when the old shape is present, so it's a no-op once fixed.
+	The desk icon must be the *workspace* (a "Link" icon), not an "App" icon: an
+	App icon's route is an absolute URL, which the desk opens in a new tab. Prior
+	versions produced either a "Tarceel Erpnext" app folder (with a letter-avatar
+	child) or a "Tarceel" App icon (opened a new tab); both are converted here to
+	the workspace Link icon, with `app` set so the logo renders. Idempotent.
 	"""
 	if not frappe.db.exists("DocType", "Desktop Icon"):
 		return  # not v16
 
 	from frappe.desk.doctype.desktop_icon.desktop_icon import create_desktop_icons
 
-	stale_folder = frappe.db.exists(
-		"Desktop Icon", {"label": "Tarceel Erpnext", "app": "tarceel_erpnext"}
+	# Drop the old app folder, and any "Tarceel" that is the wrong (App) type.
+	if frappe.db.exists("Desktop Icon", {"label": "Tarceel Erpnext", "app": "tarceel_erpnext"}):
+		frappe.delete_doc("Desktop Icon", "Tarceel Erpnext", ignore_permissions=True, force=True)
+	current = frappe.db.get_value(
+		"Desktop Icon", "Tarceel", ["icon_type", "app", "parent_icon"], as_dict=True
 	)
-	tarceel = frappe.db.get_value("Desktop Icon", "Tarceel", "icon_type")
-	if not stale_folder and tarceel == "App":
-		return  # already the single app icon
+	if current and current.icon_type == "App":
+		frappe.delete_doc("Desktop Icon", "Tarceel", ignore_permissions=True, force=True)
+		current = None
 
-	for name in ["Tarceel Erpnext", "Tarceel"]:
-		if frappe.db.exists("Desktop Icon", name):
-			frappe.delete_doc("Desktop Icon", name, ignore_permissions=True, force=True)
-	create_desktop_icons()
-	frappe.cache.hdel("desktop_icons", "Administrator")
+	if not current:
+		create_desktop_icons()  # regenerates the workspace Link icon
+		current = frappe.db.get_value(
+			"Desktop Icon", "Tarceel", ["icon_type", "app", "parent_icon"], as_dict=True
+		)
+
+	# Frappe sets `app_name` (not `app`) on workspace icons, so the logo lookup
+	# fails and it falls back to a letter avatar; also detach it from any folder.
+	if current:
+		changes = {}
+		if current.app != "tarceel_erpnext":
+			changes["app"] = "tarceel_erpnext"
+		if current.parent_icon:
+			changes["parent_icon"] = None
+		if changes:
+			frappe.db.set_value("Desktop Icon", "Tarceel", changes)
+			frappe.cache.hdel("desktop_icons", "Administrator")
 
 
 def after_install():

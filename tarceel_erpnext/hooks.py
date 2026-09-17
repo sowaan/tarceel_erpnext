@@ -10,16 +10,11 @@ app_license = "mit"
 
 # required_apps = []
 
-# Register the app (with its logo) on the apps screen. v16 also uses this logo
-# for the workspace's sidebar header icon — without it, a letter-avatar shows.
-add_to_apps_screen = [
-	{
-		"name": "tarceel_erpnext",
-		"logo": "/assets/tarceel_erpnext/images/tarceel_icon_sm.png",
-		"title": "Tarceel",
-		"route": "/app/tarceel",
-	}
-]
+# Note: we deliberately do NOT register `add_to_apps_screen`. On v16 that makes
+# Frappe create an "App"-type desktop icon whose route is an absolute URL, which
+# the desk opens in a new tab. Instead the desktop icon is the workspace itself
+# (a Link icon), set up in setup.py, so it opens the workspace in the same tab
+# and still shows the logo (from public/icons/desktop_icons via its `app` field).
 
 # Includes in <head>
 # ------------------
