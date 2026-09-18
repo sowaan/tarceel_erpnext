@@ -179,6 +179,58 @@ class TestTarceelClient(FrappeTestCase):
 		self.assertEqual(frappe.local.message_log, [])
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_session_qr_connected_returns_no_qr(self, req):
+		req.return_value = _resp(200, {"status": "active", "sessionStatus": "connected"})
+		out = api.get_session_qr()
+		self.assertEqual(out["session_status"], "connected")
+		self.assertIsNone(out["qr_image"])
+		self.assertFalse(out["needs_relink"])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_session_qr_logged_out_needs_relink_without_fetching_qr(self, req):
+		req.return_value = _resp(200, {"status": "active", "sessionStatus": "logged_out"})
+		out = api.get_session_qr()
+		self.assertTrue(out["needs_relink"])
+		self.assertIsNone(out["qr_image"])
+		# It must NOT call the /qr endpoint when logged out (no pending QR yet).
+		self.assertEqual(req.call_count, 1)
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_session_qr_pending_renders_scannable_image(self, req):
+		req.side_effect = [
+			_resp(200, {"status": "active", "sessionStatus": "qr_pending"}),
+			_resp(200, {"qr": "2@rawpairingstring,abc,def"}),
+		]
+		out = api.get_session_qr()
+		self.assertEqual(out["session_status"], "qr_pending")
+		self.assertTrue(out["qr_image"].startswith("data:image/png;base64,"))
+
+	def test_render_qr_data_uri(self):
+		import base64 as b64
+
+		# raw pairing string -> a real PNG data URI
+		uri = api._render_qr_data_uri("2@rawpairingstring")
+		self.assertTrue(uri.startswith("data:image/png;base64,"))
+		self.assertEqual(b64.b64decode(uri.split(",", 1)[1])[:8], b"\x89PNG\r\n\x1a\n")
+		# an already-rendered data URI is passed through untouched
+		passthrough = "data:image/png;base64,QUJD"
+		self.assertEqual(api._render_qr_data_uri(passthrough), passthrough)
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_relink_session_ok(self, req):
+		req.return_value = _resp(200, {"status": "relink_requested"})
+		self.assertTrue(api.relink_session()["ok"])
+		self.assertTrue(req.call_args[0][1].endswith("/relink"))
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_session_qr_error_does_not_leak_message(self, req):
+		req.return_value = _resp(401, {})
+		frappe.clear_messages()
+		out = api.get_session_qr()
+		self.assertIn("error", out)
+		self.assertEqual(frappe.local.message_log, [])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_configure_webhook_error_does_not_leak_message(self, req):
 		# A failed webhook registration must not leave a queued (blocking) dialog;
 		# the form shows a toast from the returned message instead.

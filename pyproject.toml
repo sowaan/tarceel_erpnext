@@ -8,6 +8,7 @@ requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
+    "qrcode",  # render the WhatsApp pairing QR locally (never via an external service)
     # "frappe~=15.0.0" # Installed and managed by bench.
 ]
 
