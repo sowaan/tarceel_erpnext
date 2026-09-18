@@ -145,6 +145,24 @@ class TestTarceelConnect(FrappeTestCase):
 		self.assertRaises(frappe.PermissionError, api.connect_poll, flow_id)
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_connect_start_surfaces_error_instead_of_crashing(self, req):
+		# Tarceel can return `error` as a bare string, not a {code, message} dict —
+		# that must produce a clean {error: ...} result, not an AttributeError.
+		req.return_value = _resp(400, {"error": "invalid_request"})
+		out = api.connect_start()
+		self.assertIn("error", out)
+		self.assertNotIn("flow_id", out)
+		self.assertIn("invalid_request", out["error"])
+
+	def test_error_message_tolerates_string_and_missing_error(self):
+		from tarceel_erpnext import client
+
+		self.assertIn("boom", client._tarceel_error_message(400, {"error": "boom"}))
+		self.assertIn("nested", client._tarceel_error_message(400, {"error": {"message": "nested"}}))
+		# no `error` key at all must still yield a plain HTTP message, not crash.
+		self.assertIn("500", client._tarceel_error_message(500, {}))
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_poll_surfaces_tarceel_errors_gracefully(self, req):
 		res = self._start_flow(req)
 		# A bad/expired device code -> Tarceel 4xx -> client raises -> poll returns error.

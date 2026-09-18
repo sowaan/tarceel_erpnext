@@ -101,11 +101,16 @@ def connect_start():
 	frappe.only_for("System Manager")
 
 	app_name = f"Frappe – {frappe.local.site}"
-	data = client.request_device_code(app_name)
+	try:
+		data = client.request_device_code(app_name)
+	except TarceelError as exc:
+		# Surface the reason inline instead of a raw traceback so the form can
+		# show it and offer a retry.
+		return {"error": str(exc)}
 
 	device_code = data.get("deviceCode")
 	if not device_code:
-		frappe.throw(_("Tarceel did not return a device code. Please try again."), TarceelError)
+		return {"error": _("Tarceel did not return a device code. Please try again.")}
 
 	interval = int(data.get("interval") or 5)
 	flow_id = frappe.generate_hash(length=32)

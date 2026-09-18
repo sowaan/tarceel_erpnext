@@ -81,10 +81,18 @@ def _request(method, url, headers, json=None):
 
 def _tarceel_error_message(status_code, payload):
 	"""Map a Tarceel error response to a plain, user-facing message. Never includes
-	request headers or the API key."""
-	error = (payload or {}).get("error") or {}
-	code = error.get("code")
-	detail = error.get("message")
+	request headers or the API key. Tolerates the shapes the `error` field can take
+	— a {code, message} object, a bare string, or nothing at all."""
+	payload = payload or {}
+	error = payload.get("error")
+	code = detail = None
+	if isinstance(error, dict):
+		code = error.get("code")
+		detail = error.get("message")
+	elif isinstance(error, str):
+		detail = error
+	if not detail:
+		detail = payload.get("message") or payload.get("error_description")
 
 	if status_code == 401:
 		return _("Tarceel rejected the API key (401). Re-check the Instance API Key in Tarceel Settings.")
