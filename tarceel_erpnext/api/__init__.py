@@ -103,7 +103,9 @@ def connect_start():
 	The deviceCode is never returned to the client."""
 	frappe.only_for("System Manager")
 
-	app_name = f"Frappe – {frappe.local.site}"
+	# Shown on Tarceel's approval page as "<app_name> wants to connect" — keep it a
+	# clean, generic product name rather than the raw site hostname.
+	app_name = "Tarceel for ERPNext"
 	try:
 		data = client.request_device_code(app_name)
 	except TarceelError as exc:
