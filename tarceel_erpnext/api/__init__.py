@@ -221,6 +221,11 @@ def get_session_qr():
 		frappe.clear_messages()
 		return {"error": str(exc)}
 
+	# Keep the shared connection snapshot in sync with what we just observed, so a
+	# reload right after the number connects shows the connected card, not a stale
+	# qr_pending one (which would loop QR card -> connected -> reload).
+	_store_connection_snapshot(_build_snapshot(info))
+
 	session_status = info.get("sessionStatus")
 	result = {"session_status": session_status, "qr_image": None, "needs_relink": False}
 
@@ -307,6 +312,17 @@ def _store_connection_snapshot(snapshot):
 	)
 
 
+def _build_snapshot(data):
+	"""Build a connection snapshot {ok, session_status, message} from a raw
+	GET /instances/{id} response."""
+	session_status = data.get("sessionStatus")
+	healthy, hint = _SESSION_HINTS.get(session_status, (False, _("No WhatsApp session is linked yet.")))
+	if data.get("status") and data.get("status") != "active":
+		healthy = False
+		hint = _("The Tarceel instance is '{0}', not active.").format(data.get("status"))
+	return {"ok": bool(healthy), "session_status": session_status, "message": str(hint)}
+
+
 def _connection_snapshot():
 	"""Live instance/session health, cached briefly so opening forms doesn't hit
 	Tarceel on every load. Test Connection refreshes this immediately."""
@@ -315,15 +331,7 @@ def _connection_snapshot():
 		return cached
 
 	try:
-		data = get_instance_status()
-		session_status = data.get("sessionStatus")
-		healthy, hint = _SESSION_HINTS.get(
-			session_status, (False, _("No WhatsApp session is linked yet."))
-		)
-		if data.get("status") and data.get("status") != "active":
-			healthy = False
-			hint = _("The Tarceel instance is '{0}', not active.").format(data.get("status"))
-		snapshot = {"ok": bool(healthy), "session_status": session_status, "message": str(hint)}
+		snapshot = _build_snapshot(get_instance_status())
 	except TarceelError as exc:
 		snapshot = {
 			"ok": False,

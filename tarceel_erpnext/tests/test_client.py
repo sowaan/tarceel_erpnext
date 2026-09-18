@@ -205,6 +205,18 @@ class TestTarceelClient(FrappeTestCase):
 		self.assertEqual(out["session_status"], "qr_pending")
 		self.assertTrue(out["qr_image"].startswith("data:image/png;base64,"))
 
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_session_qr_refreshes_connection_snapshot(self, req):
+		# Polling for the QR must keep the shared snapshot current, so a reload right
+		# after connecting shows the connected card instead of looping on a stale one.
+		frappe.cache().delete_value("tarceel_connection_snapshot")
+		req.return_value = _resp(200, {"status": "active", "sessionStatus": "connected"})
+		api.get_session_qr()
+		snap = frappe.cache().get_value("tarceel_connection_snapshot")
+		self.assertIsNotNone(snap)
+		self.assertTrue(snap["ok"])
+		self.assertEqual(snap["session_status"], "connected")
+
 	def test_render_qr_data_uri(self):
 		import base64 as b64
 
