@@ -189,7 +189,10 @@ def seed_default_data():
 
 	_seed_templates()
 	_seed_phone_mappings_and_flag()
-	frappe.db.commit()
+	# Runs from after_install / after_migrate. Commit so the seeded records and the
+	# "seeded" flag persist together, and a later hook error or a re-run can't
+	# re-seed over the customer's own edits.
+	frappe.db.commit()  # nosemgrep
 
 
 def _seed_templates():
