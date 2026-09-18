@@ -12,7 +12,7 @@ from frappe import _
 from frappe.utils import get_url
 
 from tarceel_erpnext import client
-from tarceel_erpnext.client import TarceelError, get_instance_status
+from tarceel_erpnext.client import TarceelAuthError, TarceelError, get_instance_status
 
 # How each Tarceel sessionStatus should read to a Frappe admin, and whether it
 # counts as a healthy, send-ready instance.
@@ -42,9 +42,12 @@ def test_connection():
 	try:
 		data = get_instance_status()
 	except TarceelError as exc:
+		auth_failed = isinstance(exc, TarceelAuthError)
 		# Keep the cached snapshot (read by the status card/banner) in sync.
-		_store_connection_snapshot({"ok": False, "session_status": None, "message": str(exc)})
-		return {"ok": False, "message": str(exc)}
+		_store_connection_snapshot(
+			{"ok": False, "session_status": None, "message": str(exc), "auth_failed": auth_failed}
+		)
+		return {"ok": False, "message": str(exc), "auth_failed": auth_failed}
 
 	session_status = data.get("sessionStatus")
 	instance_status = data.get("status")
@@ -243,7 +246,12 @@ def _connection_snapshot():
 			hint = _("The Tarceel instance is '{0}', not active.").format(data.get("status"))
 		snapshot = {"ok": bool(healthy), "session_status": session_status, "message": str(hint)}
 	except TarceelError as exc:
-		snapshot = {"ok": False, "session_status": None, "message": str(exc)}
+		snapshot = {
+			"ok": False,
+			"session_status": None,
+			"message": str(exc),
+			"auth_failed": isinstance(exc, TarceelAuthError),
+		}
 
 	_store_connection_snapshot(snapshot)
 	return snapshot

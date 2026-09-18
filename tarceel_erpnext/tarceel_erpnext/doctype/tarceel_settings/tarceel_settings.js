@@ -22,36 +22,54 @@ function render_intro(frm) {
 	)}</div>`;
 
 	const configured = frm.doc.instance_id && frm.doc.__onload && frm.doc.__onload.has_api_key;
-	if (configured) {
-		// Always show the live connection status here (connected or not), then the
-		// disclosure below it.
-		field.html(
-			`<div class="tarceel-conn-card tarceel-conn-card--checking"><div class="tarceel-conn-left"><span class="tarceel-conn-dot"></span><div class="tarceel-conn-title">${__(
-				"Checking connection…"
-			)}</div></div></div>` + disclosure
-		);
-		frappe.call({
-			method: "tarceel_erpnext.api.get_setup_status",
-			callback(r) {
-				const s = r.message || {};
-				if (s.connection) {
-					field.html(connection_status_card(s.connection) + disclosure);
-					field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
-					field.$wrapper.find(".tarceel-reconnect-btn").on("click", () => connect_to_tarceel(frm));
-				} else {
-					field.html(disclosure);
-				}
-			},
-		});
+	if (!configured) {
+		render_connect_hero(frm, field);
 		return;
 	}
 
+	// Configured: show the live connection status. But if Tarceel rejected the
+	// saved credentials (401 — wrong key/instance id), show the Connect hero
+	// again so the user can re-link.
+	field.html(
+		`<div class="tarceel-conn-card tarceel-conn-card--checking"><div class="tarceel-conn-left"><span class="tarceel-conn-dot"></span><div class="tarceel-conn-title">${__(
+			"Checking connection…"
+		)}</div></div></div>` + disclosure
+	);
+	frappe.call({
+		method: "tarceel_erpnext.api.get_setup_status",
+		callback(r) {
+			const s = r.message || {};
+			const conn = s.connection;
+			if (conn && conn.auth_failed) {
+				render_connect_hero(
+					frm,
+					field,
+					__(
+						"The saved API Key or Instance ID was rejected by Tarceel (401). Connect again to re-link your WhatsApp instance."
+					)
+				);
+			} else if (conn) {
+				field.html(connection_status_card(conn) + disclosure);
+				field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
+				field.$wrapper.find(".tarceel-reconnect-btn").on("click", () => connect_to_tarceel(frm));
+			} else {
+				field.html(disclosure);
+			}
+		},
+	});
+}
+
+function render_connect_hero(frm, field, note) {
 	const dot = (n, label) =>
 		`<span class="tarceel-stepper-item"><span class="tarceel-stepper-num">${n}</span>${label}</span>`;
+	const note_html = note
+		? `<div class="tarceel-hero-note">&#9888; ${frappe.utils.escape_html(note)}</div>`
+		: "";
 
 	field.html(`
 		<div class="tarceel-hero">
 			<div class="tarceel-hero-glow"></div>
+			${note_html}
 			<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-hero-logo" />
 			<div class="tarceel-hero-title">${__("Connect WhatsApp to your ERP")}</div>
 			<div class="tarceel-hero-sub text-muted">${__(
@@ -282,7 +300,7 @@ function inject_intro_styles() {
 		.tarceel-hero-title { position: relative; font-weight: 700; font-size: 22px; color: var(--heading-color, #1f272e); }
 		.tarceel-hero-sub { position: relative; max-width: 520px; margin: 8px auto 22px; line-height: 1.55; }
 		.tarceel-hero-cta {
-			position: relative; border: 0; cursor: pointer;
+			position: relative; overflow: hidden; border: 0; cursor: pointer;
 			display: inline-flex; align-items: center; gap: 10px;
 			padding: 13px 30px; font-size: 15px; font-weight: 600; color: #fff;
 			border-radius: 999px;
@@ -291,16 +309,32 @@ function inject_intro_styles() {
 			animation: tarceel-pulse 2.4s ease-in-out infinite;
 			transition: transform 0.12s ease, box-shadow 0.12s ease;
 		}
+		/* keep label/icon above the moving shine */
+		.tarceel-hero-cta > * { position: relative; z-index: 1; }
+		/* periodic light sweep so the button clearly reads as an action */
+		.tarceel-hero-cta::before {
+			content: ""; position: absolute; top: 0; left: -70%; z-index: 0;
+			width: 45%; height: 100%; transform: skewX(-18deg);
+			background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+			animation: tarceel-shine 3.2s ease-in-out infinite;
+		}
 		.tarceel-hero-cta:hover, .tarceel-hero-cta:focus {
-			color: #fff; transform: translateY(-1px); outline: none;
-			box-shadow: 0 10px 26px rgba(37, 211, 102, 0.52); animation: none;
+			color: #fff; transform: translateY(-2px) scale(1.02); outline: none;
+			box-shadow: 0 12px 30px rgba(37, 211, 102, 0.55); animation: none;
 		}
 		.tarceel-hero-cta-ic { font-size: 16px; }
-		.tarceel-hero-cta-arrow { transition: transform 0.15s ease; }
-		.tarceel-hero-cta:hover .tarceel-hero-cta-arrow { transform: translateX(3px); }
+		.tarceel-hero-cta-arrow { display: inline-block; animation: tarceel-nudge 1.5s ease-in-out infinite; }
 		@keyframes tarceel-pulse {
 			0%, 100% { box-shadow: 0 6px 18px rgba(37, 211, 102, 0.40); }
 			50% { box-shadow: 0 8px 28px rgba(37, 211, 102, 0.66); }
+		}
+		@keyframes tarceel-shine {
+			0% { left: -70%; }
+			55%, 100% { left: 130%; }
+		}
+		@keyframes tarceel-nudge {
+			0%, 100% { transform: translateX(0); }
+			50% { transform: translateX(4px); }
 		}
 		.tarceel-stepper {
 			position: relative; display: flex; align-items: center; justify-content: center;
@@ -375,6 +409,11 @@ function inject_intro_styles() {
 		.tarceel-dlg-seg { width: 42px; height: 2px; background: var(--gray-300, #d1d8dd); transition: background 0.2s ease; }
 		.tarceel-dlg-seg.tarceel-dlg-seg--done { background: #12b459; }
 		.tarceel-dlg-steplabels { display: flex; justify-content: space-between; width: 162px; margin: 6px auto 16px; font-size: 11px; color: var(--text-muted); }
+		.tarceel-hero-note {
+			position: relative; display: inline-block; max-width: 520px; margin: 0 auto 18px;
+			padding: 8px 14px; border-radius: 8px; font-size: var(--text-sm, 13px); line-height: 1.5;
+			background: var(--red-50, #fff5f5); border: 1px solid #f0b4b4; color: #b02a2a;
+		}
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }

@@ -138,3 +138,34 @@ class TestTarceelClient(FrappeTestCase):
 		result = api.test_connection()
 		self.assertFalse(result["ok"])
 		self.assertIn("QR code", result["message"])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_401_raises_auth_error(self, req):
+		# A wrong key/instance id -> the auth-specific error, not a plain TarceelError.
+		req.return_value = _resp(401, {"error": {"code": "unauthorized", "message": "bad key"}})
+		with self.assertRaises(client.TarceelAuthError):
+			client.get_instance_status()
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_test_connection_flags_auth_failed_on_401(self, req):
+		req.return_value = _resp(401, {})
+		result = api.test_connection()
+		self.assertFalse(result["ok"])
+		self.assertTrue(result["auth_failed"])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_setup_status_flags_auth_failed_on_401(self, req):
+		# The form uses this to decide whether to show the Connect hero again.
+		req.return_value = _resp(401, {})
+		result = api.get_setup_status()
+		self.assertTrue(result["configured"])
+		self.assertTrue(result["connection"]["auth_failed"])
+		self.assertFalse(result["connection"]["ok"])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_setup_status_not_auth_failed_on_409(self, req):
+		# A session-not-connected (409) is not a credential problem -> no re-link prompt.
+		req.return_value = _resp(409, {"error": {"code": "session"}})
+		result = api.get_setup_status()
+		self.assertFalse(result["connection"]["ok"])
+		self.assertFalse(result["connection"].get("auth_failed"))
