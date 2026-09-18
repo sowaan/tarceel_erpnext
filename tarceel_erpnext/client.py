@@ -151,3 +151,46 @@ def set_webhook(url):
 	every call, so the caller must store whatever secret comes back here."""
 	settings = get_settings()
 	return _request("PUT", _instance_url(settings, "/webhook"), _headers(settings), json={"url": url})
+
+
+# --- Connect (device-authorization) flow ------------------------------------
+#
+# These two calls obtain an instanceId + API key WITHOUT a human pasting a key
+# from the Tarceel dashboard (see docs/connect.md in the Tarceel repo). They are
+# the only calls here that are NOT instance-scoped and carry NO API key — there
+# is none yet; getting one is the whole point. The `deviceCode` they deal in is a
+# server-side secret and must never reach the browser.
+
+CONNECT_PRODUCTION_URL = "https://app.tarceel.com"
+
+
+def _connect_base_url():
+	"""Base URL for the (pre-credential) connect endpoints. Reads the saved
+	base_url but falls back to the production Tarceel URL, since the flow can run
+	on a brand-new site before anything is configured."""
+	base = (frappe.db.get_single_value("Tarceel Settings", "base_url") or "").strip().rstrip("/")
+	return base or CONNECT_PRODUCTION_URL
+
+
+def request_device_code(app_name):
+	"""POST /connect/device-code — begin the device-authorization flow. Returns
+	{deviceCode, userCode, verificationUri, interval, ...}. The deviceCode is a
+	secret: keep it server-side, never hand it to the browser."""
+	return _request(
+		"POST",
+		f"{_connect_base_url()}/connect/device-code",
+		{"Content-Type": "application/json"},
+		json={"appName": app_name},
+	)
+
+
+def poll_connect_token(device_code):
+	"""POST /connect/token — one poll of the device-authorization flow. Returns
+	{status: "pending"|"approved"|"denied"|"expired", ...}; an "approved" response
+	also carries instanceId + apiKey (the only time the key is ever shown)."""
+	return _request(
+		"POST",
+		f"{_connect_base_url()}/connect/token",
+		{"Content-Type": "application/json"},
+		json={"deviceCode": device_code},
+	)
