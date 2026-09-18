@@ -220,7 +220,11 @@ class TestTarceelClient(FrappeTestCase):
 	def test_relink_session_ok(self, req):
 		req.return_value = _resp(200, {"status": "relink_requested"})
 		self.assertTrue(api.relink_session()["ok"])
+		_, kwargs = req.call_args
 		self.assertTrue(req.call_args[0][1].endswith("/relink"))
+		# A bodyless POST must still send a JSON body ({}), or a Fastify server
+		# rejects it with FST_ERR_CTP_EMPTY_JSON_BODY.
+		self.assertEqual(kwargs["json"], {})
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_session_qr_error_does_not_leak_message(self, req):

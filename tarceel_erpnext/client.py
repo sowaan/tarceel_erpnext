@@ -62,6 +62,11 @@ def _request(method, url, headers, json=None):
 	"""Make one Tarceel call and return parsed JSON, or raise TarceelError with a
 	plain, key-free message. Headers (which carry the API key) are never included
 	in any raised error."""
+	# A POST/PUT/PATCH with Content-Type: application/json must carry a body, or
+	# servers like Fastify reject it (FST_ERR_CTP_EMPTY_JSON_BODY). Default a
+	# bodyless write to an empty object.
+	if json is None and method.upper() in ("POST", "PUT", "PATCH"):
+		json = {}
 	try:
 		response = requests.request(method, url, headers=headers, json=json, timeout=REQUEST_TIMEOUT)
 	except requests.RequestException:
