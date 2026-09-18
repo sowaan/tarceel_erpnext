@@ -85,7 +85,7 @@ function render_connect_hero(frm, field, note) {
 				<span class="tarceel-stepper-line"></span>
 				${dot(2, __("Approve"))}
 				<span class="tarceel-stepper-line"></span>
-				${dot(3, __("Done — no keys"))}
+				${dot(3, __("Done"))}
 			</div>
 			<div class="tarceel-hero-alt text-muted small">
 				${__("No account yet?")}
