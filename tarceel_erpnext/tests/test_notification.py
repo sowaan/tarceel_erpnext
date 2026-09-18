@@ -43,7 +43,9 @@ class TestWhatsAppNotification(FrappeTestCase):
 
 	def test_controller_is_overridden(self):
 		notif = _make_notification("TAR Test WA Basic")
-		self.assertEqual(notif.__class__.__name__, "TarceelNotification")
+		# isinstance holds under both override_doctype_class (v15, the class itself)
+		# and extend_doctype_class (v16, a subclass mixed into the base controller).
+		self.assertIsInstance(notif, notif_mod.TarceelNotification)
 
 	def test_recipients_resolved_via_dotted_path(self):
 		notif = _make_notification("TAR Test WA Recips")
