@@ -44,8 +44,10 @@
 |---|---|
 | **Connect in one click** | **Link the number by QR, in Frappe** |
 | ![Connect to Tarceel](screenshots/01-connect.png) | ![Scan the WhatsApp QR](screenshots/03-qr.png) |
-| **Send from any document** | **Delivery status and message log** |
-| ![Send WhatsApp dialog](screenshots/04-send.png) | ![WhatsApp Message Log](screenshots/05-message-log.png) |
+| **Send from any document** | **Reusable message templates** |
+| ![Send WhatsApp dialog](screenshots/04-send.png) | ![WhatsApp Message Template](screenshots/08-template.png) |
+| **Messages on the document timeline** | **Delivery status and message log** |
+| ![WhatsApp on the timeline](screenshots/07-timeline.png) | ![WhatsApp Message Log](screenshots/05-message-log.png) |
 | **Automate with a Notification** | **Connection and delivery updates** |
 | ![WhatsApp notification channel](screenshots/06-notification.png) | ![Connected status and webhook](screenshots/02-connected.png) |
 
