@@ -43,6 +43,9 @@ def test_connection():
 		data = get_instance_status()
 	except TarceelError as exc:
 		auth_failed = isinstance(exc, TarceelAuthError)
+		# The client renders a single result dialog from the returned message; drop
+		# the throw's queued server-message so it doesn't pop a duplicate dialog.
+		frappe.clear_messages()
 		# Keep the cached snapshot (read by the status card/banner) in sync.
 		_store_connection_snapshot(
 			{"ok": False, "session_status": None, "message": str(exc), "auth_failed": auth_failed}
@@ -254,6 +257,10 @@ def _connection_snapshot():
 			"message": str(exc),
 			"auth_failed": isinstance(exc, TarceelAuthError),
 		}
+		# get_instance_status() throws, which queues the message for the client. This
+		# runs on form load, so drop it — otherwise it pops as a blocking dialog. The
+		# status is shown inline (status card / Connect hero) instead.
+		frappe.clear_messages()
 
 	_store_connection_snapshot(snapshot)
 	return snapshot
