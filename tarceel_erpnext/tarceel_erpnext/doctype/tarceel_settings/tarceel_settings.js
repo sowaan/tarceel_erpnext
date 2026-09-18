@@ -5,10 +5,9 @@ const TARCEEL_ICON = "/assets/tarceel_erpnext/images/tarceel_icon_sm.png";
 
 frappe.ui.form.on("Tarceel Settings", {
 	refresh(frm) {
-		frm.add_custom_button(__("Connect to Tarceel"), () => connect_to_tarceel(frm));
+		// "Connect to Tarceel" lives in the hero card (render_intro), not the toolbar.
 		frm.add_custom_button(__("Test Connection"), () => test_connection(frm));
 		frm.add_custom_button(__("Configure Webhook"), () => configure_webhook(frm));
-		frm.change_custom_button_type(__("Connect to Tarceel"), null, "primary");
 		render_intro(frm);
 	},
 });
@@ -38,6 +37,7 @@ function render_intro(frm) {
 				if (s.connection) {
 					field.html(connection_status_card(s.connection) + disclosure);
 					field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
+					field.$wrapper.find(".tarceel-reconnect-btn").on("click", () => connect_to_tarceel(frm));
 				} else {
 					field.html(disclosure);
 				}
@@ -46,30 +46,30 @@ function render_intro(frm) {
 		return;
 	}
 
-	const step = (n, text) =>
-		`<div class="tarceel-intro-step"><span class="tarceel-step-num">${n}</span><span>${text}</span></div>`;
+	const dot = (n, label) =>
+		`<span class="tarceel-stepper-item"><span class="tarceel-stepper-num">${n}</span>${label}</span>`;
 
 	field.html(`
-		<div class="tarceel-intro-card">
-			<div class="tarceel-intro-header">
-				<div class="tarceel-intro-left">
-					<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-intro-logo" />
-					<div>
-						<div class="tarceel-intro-title">${__("Connect your Tarceel account")}</div>
-						<div class="tarceel-intro-sub text-muted">${__(
-							"Send WhatsApp messages and notifications from your documents. Unofficial, QR-linked integration, not the official WhatsApp Business Platform."
-						)}</div>
-					</div>
-				</div>
-				<button type="button"
-					class="btn btn-primary btn-sm tarceel-intro-btn tarceel-intro-connect">${__("Connect to Tarceel")}</button>
+		<div class="tarceel-hero">
+			<div class="tarceel-hero-glow"></div>
+			<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-hero-logo" />
+			<div class="tarceel-hero-title">${__("Connect WhatsApp to your ERP")}</div>
+			<div class="tarceel-hero-sub text-muted">${__(
+				"Send messages, invoices and alerts from any document. Unofficial, QR-linked integration — not the official WhatsApp Business Platform."
+			)}</div>
+			<button type="button" class="tarceel-hero-cta tarceel-intro-connect">
+				<span class="tarceel-hero-cta-ic">&#128279;</span>
+				<span>${__("Connect to Tarceel")}</span>
+				<span class="tarceel-hero-cta-arrow">&rarr;</span>
+			</button>
+			<div class="tarceel-stepper">
+				${dot(1, __("Connect"))}
+				<span class="tarceel-stepper-line"></span>
+				${dot(2, __("Approve"))}
+				<span class="tarceel-stepper-line"></span>
+				${dot(3, __("Done — no keys"))}
 			</div>
-			<div class="tarceel-intro-steps">
-				${step(1, __("Click Connect to Tarceel"))}
-				${step(2, __("Approve the request in your Tarceel account"))}
-				${step(3, __("Done — no keys to copy"))}
-			</div>
-			<div class="tarceel-intro-alt text-muted small">
+			<div class="tarceel-hero-alt text-muted small">
 				${__("No account yet?")}
 				<a href="https://app.tarceel.com" target="_blank" rel="noopener">${__("Create a Tarceel account")}</a>
 			</div>
@@ -137,6 +137,16 @@ function open_connect_dialog(frm, res) {
 
 	$body.html(`
 		<div class="tarceel-connect-flow">
+			<div class="tarceel-dlg-steps">
+				<span class="tarceel-dlg-dot tarceel-dlg-done">1</span>
+				<span class="tarceel-dlg-seg tarceel-dlg-seg--done"></span>
+				<span class="tarceel-dlg-dot tarceel-dlg-active" data-step="2">2</span>
+				<span class="tarceel-dlg-seg" data-seg="2"></span>
+				<span class="tarceel-dlg-dot" data-step="3">3</span>
+			</div>
+			<div class="tarceel-dlg-steplabels"><span>${__("Start")}</span><span>${__(
+				"Approve"
+			)}</span><span>${__("Done")}</span></div>
 			<p>${__(
 				"Approve this request in your Tarceel account to link your WhatsApp instance automatically."
 			)}</p>
@@ -204,6 +214,9 @@ function open_connect_dialog(frm, res) {
 				}
 				stop();
 				if (out.status === "approved") {
+					$body.find('[data-step="2"]').removeClass("tarceel-dlg-active").addClass("tarceel-dlg-done");
+					$body.find('[data-seg="2"]').addClass("tarceel-dlg-seg--done");
+					$body.find('[data-step="3"]').addClass("tarceel-dlg-done");
 					set_status("ok", out.message || __("Connected to Tarceel."));
 					frappe.show_alert({ message: __("Connected to Tarceel."), indicator: "green" });
 					setTimeout(() => {
@@ -240,36 +253,67 @@ function connection_status_card(conn) {
 					<div class="tarceel-conn-msg text-muted">${frappe.utils.escape_html(conn.message || "")}</div>
 				</div>
 			</div>
-			<button class="btn btn-sm tarceel-recheck-btn">${__("Test Connection")}</button>
+			<div class="tarceel-conn-actions">
+				<button class="btn btn-sm tarceel-recheck-btn">${__("Test Connection")}</button>
+				<button class="btn btn-sm tarceel-reconnect-btn">${__("Reconnect")}</button>
+			</div>
 		</div>`;
 }
 
 function inject_intro_styles() {
 	if (document.getElementById("tarceel-intro-styles")) return;
 	const css = `
-		.tarceel-intro-card {
-			padding: 20px 22px; margin: 6px 0 22px;
-			background: rgba(37, 211, 102, 0.05);
-			border: 1px solid rgba(37, 211, 102, 0.25); border-left: 3px solid #25D366;
-			border-radius: var(--border-radius-lg, 10px);
+		.tarceel-hero {
+			position: relative; overflow: hidden; text-align: center;
+			padding: 34px 26px 26px; margin: 6px 0 22px;
+			background:
+				radial-gradient(120% 90% at 50% 0%, rgba(37, 211, 102, 0.12), rgba(37, 211, 102, 0) 60%),
+				var(--card-bg, #fff);
+			border: 1px solid rgba(37, 211, 102, 0.25);
+			border-radius: var(--border-radius-lg, 12px);
 		}
-		.tarceel-intro-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-		.tarceel-intro-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
-		.tarceel-intro-logo { flex: 0 0 auto; width: 40px; height: 40px; object-fit: contain; }
-		.tarceel-intro-title { font-weight: 600; font-size: var(--text-xl, 16px); }
-		.tarceel-intro-sub { margin-top: 3px; max-width: 640px; line-height: 1.5; }
-		.tarceel-intro-btn { background: #25D366; border-color: #25D366; color: #fff; font-weight: 600; white-space: nowrap; }
-		.tarceel-intro-btn:hover, .tarceel-intro-btn:focus { background: #1da851; border-color: #1da851; color: #fff; }
-		.tarceel-intro-steps {
-			display: flex; flex-wrap: wrap; gap: 10px 28px;
-			margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(37, 211, 102, 0.2);
+		.tarceel-hero-glow {
+			position: absolute; top: -70px; left: 50%; width: 280px; height: 170px;
+			transform: translateX(-50%); pointer-events: none;
+			background: radial-gradient(circle, rgba(37, 211, 102, 0.30), rgba(37, 211, 102, 0) 70%);
+			filter: blur(6px);
 		}
-		.tarceel-intro-step { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-sm, 12px); }
-		.tarceel-step-num {
-			flex: 0 0 auto; width: 21px; height: 21px; border-radius: 50%;
+		.tarceel-hero-logo { position: relative; width: 52px; height: 52px; object-fit: contain; margin-bottom: 12px; }
+		.tarceel-hero-title { position: relative; font-weight: 700; font-size: 22px; color: var(--heading-color, #1f272e); }
+		.tarceel-hero-sub { position: relative; max-width: 520px; margin: 8px auto 22px; line-height: 1.55; }
+		.tarceel-hero-cta {
+			position: relative; border: 0; cursor: pointer;
+			display: inline-flex; align-items: center; gap: 10px;
+			padding: 13px 30px; font-size: 15px; font-weight: 600; color: #fff;
+			border-radius: 999px;
+			background: linear-gradient(135deg, #25D366, #12b459);
+			box-shadow: 0 6px 18px rgba(37, 211, 102, 0.40);
+			animation: tarceel-pulse 2.4s ease-in-out infinite;
+			transition: transform 0.12s ease, box-shadow 0.12s ease;
+		}
+		.tarceel-hero-cta:hover, .tarceel-hero-cta:focus {
+			color: #fff; transform: translateY(-1px); outline: none;
+			box-shadow: 0 10px 26px rgba(37, 211, 102, 0.52); animation: none;
+		}
+		.tarceel-hero-cta-ic { font-size: 16px; }
+		.tarceel-hero-cta-arrow { transition: transform 0.15s ease; }
+		.tarceel-hero-cta:hover .tarceel-hero-cta-arrow { transform: translateX(3px); }
+		@keyframes tarceel-pulse {
+			0%, 100% { box-shadow: 0 6px 18px rgba(37, 211, 102, 0.40); }
+			50% { box-shadow: 0 8px 28px rgba(37, 211, 102, 0.66); }
+		}
+		.tarceel-stepper {
+			position: relative; display: flex; align-items: center; justify-content: center;
+			flex-wrap: wrap; gap: 8px; max-width: 470px; margin: 26px auto 2px;
+		}
+		.tarceel-stepper-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm, 12px); color: var(--text-muted); }
+		.tarceel-stepper-num {
+			flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
 			display: inline-flex; align-items: center; justify-content: center;
-			background: #25D366; color: #fff; font-size: 11px; font-weight: 600;
+			background: #25D366; color: #fff; font-size: 11px; font-weight: 700;
 		}
+		.tarceel-stepper-line { width: 26px; height: 2px; background: rgba(37, 211, 102, 0.35); }
+		.tarceel-hero-alt { position: relative; margin-top: 20px; }
 		.tarceel-conn-card {
 			display: flex; align-items: center; justify-content: space-between; gap: 16px;
 			padding: 14px 16px; margin: 4px 0 14px; border-radius: var(--border-radius-lg, 10px);
@@ -317,6 +361,20 @@ function inject_intro_styles() {
 			animation: tarceel-spin 0.8s linear infinite;
 		}
 		@keyframes tarceel-spin { to { transform: rotate(360deg); } }
+		.tarceel-conn-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+		.tarceel-dlg-steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 2px; }
+		.tarceel-dlg-dot {
+			width: 26px; height: 26px; border-radius: 50%;
+			display: inline-flex; align-items: center; justify-content: center;
+			font-size: 12px; font-weight: 700;
+			background: var(--gray-200, #e2e6e9); color: var(--text-muted, #6b7280);
+			transition: background 0.2s ease, box-shadow 0.2s ease;
+		}
+		.tarceel-dlg-dot.tarceel-dlg-active { background: #25D366; color: #fff; box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.18); }
+		.tarceel-dlg-dot.tarceel-dlg-done { background: #12b459; color: #fff; }
+		.tarceel-dlg-seg { width: 42px; height: 2px; background: var(--gray-300, #d1d8dd); transition: background 0.2s ease; }
+		.tarceel-dlg-seg.tarceel-dlg-seg--done { background: #12b459; }
+		.tarceel-dlg-steplabels { display: flex; justify-content: space-between; width: 162px; margin: 6px auto 16px; font-size: 11px; color: var(--text-muted); }
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
