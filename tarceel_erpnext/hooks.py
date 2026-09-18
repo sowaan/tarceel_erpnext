@@ -1,9 +1,14 @@
 app_name = "tarceel_erpnext"
 app_title = "Tarceel"
 app_publisher = "Sowaan"
-app_description = "Custom ERPNext app for Tarceel"
-app_email = "mubashir.abbasi@ahsaic.org"
+app_description = (
+	"Send WhatsApp messages, templates and delivery-tracked notifications from any "
+	"Frappe/ERPNext document through your own Tarceel account. Unofficial, QR-linked integration."
+)
+app_email = "support@sowaan.com"
 app_license = "mit"
+app_logo_url = "/assets/tarceel_erpnext/images/tarceel_icon_sm.png"
+source_link = "https://github.com/sowaan/tarceel_erpnext"
 
 # Apps
 # ------------------

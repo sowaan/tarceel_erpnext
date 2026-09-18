@@ -1,9 +1,9 @@
 [project]
 name = "tarceel_erpnext"
 authors = [
-    { name = "Sowaan", email = "mubashir.abbasi@ahsaic.org"}
+    { name = "Sowaan", email = "support@sowaan.com"}
 ]
-description = "Custom ERPNext app for Tarceel"
+description = "Send WhatsApp messages, templates and delivery-tracked notifications from any Frappe/ERPNext document through your own Tarceel account. Unofficial, QR-linked integration."
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
