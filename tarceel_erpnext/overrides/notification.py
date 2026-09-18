@@ -52,7 +52,10 @@ class TarceelNotification(Notification):
 		message as its caption (mirrors email notifications' Attach Print). Delivery
 		is enqueued (after commit) so a slow/failing send or PDF render never blocks
 		or breaks the document save that triggered this notification."""
-		message = frappe.render_template(self.message, context).strip()
+		# self.message is admin-authored Jinja on the Notification (configuring a
+		# Notification requires System Manager), the same trusted-author model as
+		# Frappe's own email notifications, which likewise render self.message.
+		message = frappe.render_template(self.message, context).strip()  # nosemgrep
 
 		numbers = []
 		for number in self.get_whatsapp_recipients(doc, context):

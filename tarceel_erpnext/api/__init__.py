@@ -14,18 +14,21 @@ from frappe.utils import get_url
 from tarceel_erpnext import client
 from tarceel_erpnext.client import TarceelAuthError, TarceelError, get_instance_status
 
-# How each Tarceel sessionStatus should read to a Frappe admin, and whether it
-# counts as a healthy, send-ready instance.
-_SESSION_HINTS = {
-	"connected": (True, _("Connected and ready to send.")),
-	"connecting": (False, _("The WhatsApp session is still connecting. Try again shortly.")),
-	"qr_pending": (False, _("Waiting for a QR scan. Link the number in the Tarceel dashboard.")),
-	"reconnecting": (False, _("The WhatsApp session is reconnecting. Try again shortly.")),
-	"logged_out": (
-		False,
-		_("The WhatsApp number is logged out. Re-scan the QR code in the Tarceel dashboard."),
-	),
-}
+
+def _session_hints():
+	"""Map each Tarceel sessionStatus to (is_healthy, message). Built per call so the
+	_() translations resolve for the current site/user language; a module-level dict
+	would freeze the language at import time and break multitenancy."""
+	return {
+		"connected": (True, _("Connected and ready to send.")),
+		"connecting": (False, _("The WhatsApp session is still connecting. Try again shortly.")),
+		"qr_pending": (False, _("Waiting for a QR scan. Link the number in the Tarceel dashboard.")),
+		"reconnecting": (False, _("The WhatsApp session is reconnecting. Try again shortly.")),
+		"logged_out": (
+			False,
+			_("The WhatsApp number is logged out. Re-scan the QR code in the Tarceel dashboard."),
+		),
+	}
 
 
 @frappe.whitelist()
@@ -56,7 +59,7 @@ def test_connection():
 	instance_status = data.get("status")
 	instance_name = data.get("name")
 
-	healthy, hint = _SESSION_HINTS.get(
+	healthy, hint = _session_hints().get(
 		session_status,
 		(False, _("No WhatsApp session is linked yet. Link a number in the Tarceel dashboard.")),
 	)
@@ -316,7 +319,7 @@ def _build_snapshot(data):
 	"""Build a connection snapshot {ok, session_status, message} from a raw
 	GET /instances/{id} response."""
 	session_status = data.get("sessionStatus")
-	healthy, hint = _SESSION_HINTS.get(session_status, (False, _("No WhatsApp session is linked yet.")))
+	healthy, hint = _session_hints().get(session_status, (False, _("No WhatsApp session is linked yet.")))
 	if data.get("status") and data.get("status") != "active":
 		healthy = False
 		hint = _("The Tarceel instance is '{0}', not active.").format(data.get("status"))
