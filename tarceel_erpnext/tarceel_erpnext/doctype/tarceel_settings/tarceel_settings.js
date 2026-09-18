@@ -28,7 +28,7 @@ function render_intro(frm) {
 	}
 
 	// Configured: show the live connection status. But if Tarceel rejected the
-	// saved credentials (401 — wrong key/instance id), show the Connect hero
+	// saved credentials (401, wrong key/instance id), show the Connect hero
 	// again so the user can re-link.
 	field.html(
 		`<div class="tarceel-conn-card tarceel-conn-card--checking"><div class="tarceel-conn-left"><span class="tarceel-conn-dot"></span><div class="tarceel-conn-title">${__(
@@ -73,10 +73,10 @@ function render_connect_hero(frm, field, note) {
 			<img src="${TARCEEL_ICON}" alt="Tarceel" class="tarceel-hero-logo" />
 			<div class="tarceel-hero-title">${__("Connect WhatsApp to your ERP")}</div>
 			<div class="tarceel-hero-sub text-muted">${__(
-				"Send messages, invoices and alerts from any document. Unofficial, QR-linked integration — not the official WhatsApp Business Platform."
+				"Send messages, invoices and alerts from any document. Unofficial, QR-linked integration, not the official WhatsApp Business Platform."
 			)}</div>
 			<button type="button" class="tarceel-hero-cta tarceel-intro-connect">
-				<span class="tarceel-hero-cta-ic">&#128279;</span>
+				<svg class="tarceel-hero-cta-ic" viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 004.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 18.15h-.01a8.2 8.2 0 01-4.18-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.22 8.22 0 01-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24a8.2 8.2 0 015.82 2.42 8.18 8.18 0 012.41 5.83c0 4.54-3.69 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.42l-.48-.01c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
 				<span>${__("Connect to Tarceel")}</span>
 				<span class="tarceel-hero-cta-arrow">&rarr;</span>
 			</button>
@@ -106,6 +106,10 @@ function connect_to_tarceel(frm) {
 		return;
 	}
 
+	// Open the approval tab now, inside the click gesture, so the browser's popup
+	// blocker allows it; we point it at the real URL once the server replies.
+	const approval_window = window.open("about:blank", "_blank");
+
 	frappe.call({
 		method: "tarceel_erpnext.api.connect_start",
 		freeze: true,
@@ -113,6 +117,7 @@ function connect_to_tarceel(frm) {
 		callback: (r) => {
 			const res = r.message;
 			if (!res || !res.flow_id) {
+				if (approval_window) approval_window.close();
 				frappe.msgprint({
 					title: __("Connect failed"),
 					message: frappe.utils.escape_html(
@@ -122,12 +127,15 @@ function connect_to_tarceel(frm) {
 				});
 				return;
 			}
-			open_connect_dialog(frm, res);
+			if (approval_window && res.verification_uri) {
+				approval_window.location.href = res.verification_uri;
+			}
+			open_connect_dialog(frm, res, approval_window);
 		},
 	});
 }
 
-function open_connect_dialog(frm, res) {
+function open_connect_dialog(frm, res, approval_window) {
 	inject_intro_styles();
 	const verify_url = res.verification_uri || "";
 	const code = res.user_code || "";
@@ -136,9 +144,16 @@ function open_connect_dialog(frm, res) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Connect to Tarceel"),
 		fields: [{ fieldtype: "HTML", fieldname: "body" }],
-		primary_action_label: __("Open Approval Page"),
+		primary_action_label: __("Reopen Approval Page"),
 		primary_action: () => {
-			if (verify_url) window.open(verify_url, "_blank", "noopener");
+			if (!verify_url) return;
+			// The approval tab was already opened on click; focus it if it's still
+			// around, otherwise open a fresh one.
+			if (approval_window && !approval_window.closed) {
+				approval_window.focus();
+			} else {
+				window.open(verify_url, "_blank", "noopener");
+			}
 		},
 	});
 
@@ -169,9 +184,9 @@ function open_connect_dialog(frm, res) {
 				"Approve this request in your Tarceel account to link your WhatsApp instance automatically."
 			)}</p>
 			<ol class="tarceel-connect-steps">
-				<li>${__("Click <b>Open Approval Page</b> below (or use the link).")}</li>
+				<li>${__("The Tarceel approval page opened in a new tab (use the link below if it didn't).")}</li>
 				${code ? `<li>${__("Enter the code shown below when asked.")}</li>` : ""}
-				<li>${__("Approve — this window updates on its own.")}</li>
+				<li>${__("Approve. This window updates on its own.")}</li>
 			</ol>
 			${code_block}
 			${link_block}
@@ -247,7 +262,7 @@ function open_connect_dialog(frm, res) {
 			},
 			error: () => {
 				if (stopped) return;
-				// Transient error — keep trying until the flow expires server-side.
+				// Transient error; keep trying until the flow expires server-side.
 				poll_timer = setTimeout(poll, interval);
 			},
 		});
