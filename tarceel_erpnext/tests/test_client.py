@@ -163,6 +163,22 @@ class TestTarceelClient(FrappeTestCase):
 		self.assertFalse(result["connection"]["ok"])
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_setup_status_does_not_queue_blocking_dialog_on_401(self, req):
+		# The 401 throw inside get_instance_status must not leak as a server message
+		# (which the client would auto-render as a blocking dialog on form load).
+		req.return_value = _resp(401, {})
+		frappe.clear_messages()
+		api.get_setup_status()
+		self.assertEqual(frappe.local.message_log, [])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_test_connection_does_not_leave_duplicate_server_message(self, req):
+		req.return_value = _resp(401, {})
+		frappe.clear_messages()
+		api.test_connection()
+		self.assertEqual(frappe.local.message_log, [])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_setup_status_not_auth_failed_on_409(self, req):
 		# A session-not-connected (409) is not a credential problem -> no re-link prompt.
 		req.return_value = _resp(409, {"error": {"code": "session"}})
