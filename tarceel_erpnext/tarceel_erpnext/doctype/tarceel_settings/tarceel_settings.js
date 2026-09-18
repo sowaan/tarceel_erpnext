@@ -539,14 +539,56 @@ function render_qr_card(frm, field, disclosure) {
 	);
 	const $box = field.$wrapper.find(".tarceel-qr-box");
 	const $status = field.$wrapper.find(".tarceel-qr-status");
-	qr_tick(frm, $box, $status);
+	qr_tick(frm, $box, $status, false, 0);
 }
 
-function qr_tick(frm, $box, $status) {
+// relinking=true means the user already asked for a fresh QR after logout, so we
+// keep polling (instead of re-showing the button) until the new QR appears.
+function qr_tick(frm, $box, $status, relinking, tries) {
 	// Stop if the card is gone (form re-rendered or user navigated away).
 	if (!$box.length || !document.body.contains($box[0])) return;
 
-	const later = (ms) => qrPollTimers.push(setTimeout(() => qr_tick(frm, $box, $status), ms));
+	const spinner = `<span class="tarceel-connect-spinner"></span>`;
+	const later = (ms, opts) =>
+		qrPollTimers.push(
+			setTimeout(() => {
+				const o = opts || {};
+				qr_tick(
+					frm,
+					$box,
+					$status,
+					"relinking" in o ? o.relinking : relinking,
+					"tries" in o ? o.tries : tries
+				);
+			}, ms)
+		);
+
+	const show_relink_button = (msg) => {
+		$status.text(msg || __("Your number was logged out."));
+		$box.html(
+			`<button type="button" class="tarceel-wh-btn tarceel-qr-relink">${__("Generate QR code")}</button>`
+		);
+		$box.find(".tarceel-qr-relink").on("click", () => {
+			$box.html(spinner);
+			$status.text(__("Requesting a fresh QR code…"));
+			frappe.call({
+				method: "tarceel_erpnext.api.relink_session",
+				callback: (rr) => {
+					if (!document.body.contains($box[0])) return;
+					const out = rr.message || {};
+					if (out.ok === false) {
+						show_relink_button(out.message || __("Could not request a new QR. Please try again."));
+					} else {
+						// Enter relink-wait mode and poll for the fresh QR.
+						qr_tick(frm, $box, $status, true, 0);
+					}
+				},
+				error: () => {
+					if (document.body.contains($box[0])) qr_tick(frm, $box, $status, true, 0);
+				},
+			});
+		});
+	};
 
 	frappe.call({
 		method: "tarceel_erpnext.api.get_session_qr",
@@ -565,33 +607,31 @@ function qr_tick(frm, $box, $status) {
 				later(8000);
 				return;
 			}
-			if (res.needs_relink) {
-				// Logged out: no pending QR until we request a relink.
-				$status.text(__("Your number was logged out."));
-				$box.html(
-					`<button type="button" class="tarceel-wh-btn tarceel-qr-relink">${__(
-						"Generate QR code"
-					)}</button>`
-				);
-				$box.find(".tarceel-qr-relink").on("click", () => {
-					$box.html(`<span class="tarceel-connect-spinner"></span>`);
-					$status.text(__("Requesting a fresh QR code…"));
-					frappe.call({
-						method: "tarceel_erpnext.api.relink_session",
-						callback: () => later(3000),
-						error: () => later(4000),
-					});
-				});
-				return; // wait for the user's click
-			}
 			if (res.qr_image) {
 				$box.html(`<img class="tarceel-qr-img" src="${res.qr_image}" alt="WhatsApp QR code" />`);
 				$status.text(__("Waiting for you to scan…"));
-			} else {
-				$box.html(`<span class="tarceel-connect-spinner"></span>`);
-				$status.text(__("Preparing QR code…"));
+				later(5000, { relinking: false, tries: 0 });
+				return;
 			}
-			later(5000); // QR rotates; refresh and keep watching for a successful scan
+			if (res.needs_relink) {
+				if (relinking) {
+					// Relink requested; the fresh QR lands within a poll tick or two.
+					if ((tries || 0) >= 12) {
+						show_relink_button(__("Still logged out. Please try again."));
+						return;
+					}
+					$box.html(spinner);
+					$status.text(__("Generating a new QR code…"));
+					later(3000, { relinking: true, tries: (tries || 0) + 1 });
+				} else {
+					show_relink_button();
+				}
+				return;
+			}
+			// qr_pending but the QR isn't ready yet
+			$box.html(spinner);
+			$status.text(__("Preparing QR code…"));
+			later(5000);
 		},
 		error: () => later(8000),
 	});
