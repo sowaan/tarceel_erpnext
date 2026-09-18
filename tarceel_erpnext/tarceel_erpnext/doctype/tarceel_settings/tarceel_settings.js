@@ -97,7 +97,9 @@ function connect_to_tarceel(frm) {
 			if (!res || !res.flow_id) {
 				frappe.msgprint({
 					title: __("Connect failed"),
-					message: __("Could not start the connection. Please try again."),
+					message: frappe.utils.escape_html(
+						(res && res.error) || __("Could not start the connection. Please try again.")
+					),
 					indicator: "red",
 				});
 				return;
