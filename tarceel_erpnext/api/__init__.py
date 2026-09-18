@@ -616,6 +616,9 @@ def configure_webhook():
 	try:
 		result = client.set_webhook(url)
 	except TarceelError as exc:
+		# The client throws (queuing the message); the form shows a toast from the
+		# returned message, so drop the queued one to avoid a blocking dialog.
+		frappe.clear_messages()
 		return {"ok": False, "message": str(exc)}
 
 	settings = frappe.get_doc("Tarceel Settings")

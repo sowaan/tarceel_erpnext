@@ -5,9 +5,8 @@ const TARCEEL_ICON = "/assets/tarceel_erpnext/images/tarceel_icon_sm.png";
 
 frappe.ui.form.on("Tarceel Settings", {
 	refresh(frm) {
-		// "Connect to Tarceel" lives in the hero card (render_intro), not the toolbar.
+		// Connect + webhook setup live in the cards (render_intro), not the toolbar.
 		frm.add_custom_button(__("Test Connection"), () => test_connection(frm));
-		frm.add_custom_button(__("Configure Webhook"), () => configure_webhook(frm));
 		render_intro(frm);
 	},
 });
@@ -49,9 +48,10 @@ function render_intro(frm) {
 					)
 				);
 			} else if (conn) {
-				field.html(connection_status_card(conn) + disclosure);
+				field.html(connection_status_card(conn) + webhook_card(frm) + disclosure);
 				field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
 				field.$wrapper.find(".tarceel-reconnect-btn").on("click", () => connect_to_tarceel(frm));
+				field.$wrapper.find(".tarceel-webhook-btn").on("click", () => configure_webhook(frm));
 			} else {
 				field.html(disclosure);
 			}
@@ -429,41 +429,97 @@ function inject_intro_styles() {
 			padding: 8px 14px; border-radius: 8px; font-size: var(--text-sm, 13px); line-height: 1.5;
 			background: var(--red-50, #fff5f5); border: 1px solid #f0b4b4; color: #b02a2a;
 		}
+		.tarceel-wh-card {
+			display: flex; align-items: center; justify-content: space-between; gap: 14px;
+			padding: 14px 16px; margin: 0 0 14px;
+			border: 1px solid var(--border-color, #e5e7eb); border-radius: var(--border-radius-lg, 10px);
+			background: var(--card-bg, #fff);
+		}
+		.tarceel-wh-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+		.tarceel-wh-ic {
+			flex: 0 0 auto; width: 36px; height: 36px; border-radius: 9px;
+			display: inline-flex; align-items: center; justify-content: center;
+			background: rgba(37, 211, 102, 0.12); color: #12b459;
+		}
+		.tarceel-wh-title { font-weight: 600; }
+		.tarceel-wh-sub { font-size: var(--text-sm, 12px); color: var(--text-muted); margin-top: 2px; }
+		.tarceel-wh-url { font-size: 11px; color: var(--text-muted); word-break: break-all; margin-top: 3px; }
+		.tarceel-wh-right { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+		.tarceel-wh-on { display: inline-flex; align-items: center; gap: 5px; color: #12b459; font-weight: 600; font-size: var(--text-sm, 13px); }
+		.tarceel-wh-btn {
+			flex: 0 0 auto; border: 0; cursor: pointer; color: #fff; font-weight: 600;
+			padding: 8px 22px; border-radius: 999px; font-size: var(--text-sm, 13px);
+			background: linear-gradient(135deg, #25D366, #12b459);
+			box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
+			animation: tarceel-pulse 2.4s ease-in-out infinite;
+			transition: transform 0.12s ease, box-shadow 0.12s ease;
+		}
+		.tarceel-wh-btn:hover, .tarceel-wh-btn:focus {
+			color: #fff; transform: translateY(-1px); outline: none;
+			box-shadow: 0 8px 18px rgba(37, 211, 102, 0.5); animation: none;
+		}
+		.tarceel-wh-btn:disabled { opacity: 0.7; cursor: default; animation: none; box-shadow: none; }
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
 
+function webhook_card(frm) {
+	const configured = !!frm.doc.webhook_url;
+	const bell = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22zm6.7-6.3-1.2-1.2V11a5.5 5.5 0 0 0-4-5.3V5.2a1.5 1.5 0 0 0-3 0v.5A5.5 5.5 0 0 0 6.5 11v3.5l-1.2 1.2a1 1 0 0 0 .7 1.7h12a1 1 0 0 0 .7-1.7z"/></svg>`;
+	const left = `
+		<div class="tarceel-wh-left">
+			<span class="tarceel-wh-ic">${bell}</span>
+			<div>
+				<div class="tarceel-wh-title">${__("Delivery status updates")}</div>
+				<div class="tarceel-wh-sub">${
+					configured
+						? __("On. You'll see delivered and read receipts on your messages.")
+						: __("Get delivered and read receipts back on the messages you send.")
+				}</div>
+				${
+					configured
+						? `<div class="tarceel-wh-url">${frappe.utils.escape_html(frm.doc.webhook_url)}</div>`
+						: ""
+				}
+			</div>
+		</div>`;
+	const right = configured
+		? `<div class="tarceel-wh-right"><span class="tarceel-wh-on">&#10003; ${__(
+				"On"
+		  )}</span><button class="btn btn-xs btn-default tarceel-webhook-btn">${__(
+				"Re-register"
+		  )}</button></div>`
+		: `<button type="button" class="tarceel-wh-btn tarceel-webhook-btn">${__("Enable")}</button>`;
+	return `<div class="tarceel-wh-card">${left}${right}</div>`;
+}
+
 function configure_webhook(frm) {
 	if (frm.is_dirty()) {
-		frappe.msgprint({
-			title: __("Save first"),
-			message: __("Save your changes before configuring the webhook."),
-			indicator: "orange",
-		});
+		frappe.show_alert({ message: __("Save your changes first."), indicator: "orange" });
 		return;
 	}
 
-	frappe.confirm(
-		__(
-			"Register this site's URL with Tarceel to receive delivery-status updates? This issues a new signing secret and replaces any existing one."
-		),
-		() => {
-			frappe.call({
-				method: "tarceel_erpnext.api.configure_webhook",
-				freeze: true,
-				freeze_message: __("Configuring webhook…"),
-				callback: (r) => {
-					const res = r.message || {};
-					frappe.msgprint({
-						title: res.ok ? __("Webhook configured") : __("Webhook setup failed"),
-						message: frappe.utils.escape_html(res.message || __("No response from server.")),
-						indicator: res.ok ? "green" : "red",
-					});
-					if (res.ok) frm.reload_doc();
-				},
+	const $btn = frm.get_field("disclosure_html").$wrapper.find(".tarceel-webhook-btn");
+	const original = $btn.html();
+	$btn.prop("disabled", true).html(__("Enabling…"));
+
+	frappe.call({
+		method: "tarceel_erpnext.api.configure_webhook",
+		callback: (r) => {
+			const res = r.message || {};
+			frappe.show_alert({
+				message: frappe.utils.escape_html(
+					res.message || (res.ok ? __("Delivery updates enabled.") : __("Could not enable delivery updates."))
+				),
+				indicator: res.ok ? "green" : "red",
 			});
-		}
-	);
+			if (res.ok) {
+				frm.reload_doc(); // picks up webhook_url/secret and re-renders the card as "On"
+			} else {
+				$btn.prop("disabled", false).html(original);
+			}
+		},
+	});
 }
 
 function test_connection(frm) {

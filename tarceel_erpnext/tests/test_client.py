@@ -179,6 +179,16 @@ class TestTarceelClient(FrappeTestCase):
 		self.assertEqual(frappe.local.message_log, [])
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
+	def test_configure_webhook_error_does_not_leak_message(self, req):
+		# A failed webhook registration must not leave a queued (blocking) dialog;
+		# the form shows a toast from the returned message instead.
+		req.return_value = _resp(500, {"message": "boom"})
+		frappe.clear_messages()
+		out = api.configure_webhook()
+		self.assertFalse(out["ok"])
+		self.assertEqual(frappe.local.message_log, [])
+
+	@mock.patch("tarceel_erpnext.client.requests.request")
 	def test_setup_status_not_auth_failed_on_409(self, req):
 		# A session-not-connected (409) is not a credential problem -> no re-link prompt.
 		req.return_value = _resp(409, {"error": {"code": "session"}})
