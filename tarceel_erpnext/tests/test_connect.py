@@ -82,7 +82,7 @@ class TestTarceelConnect(FrappeTestCase):
 	def test_connect_start_sends_app_name(self, req):
 		self._start_flow(req)
 		_, kwargs = req.call_args
-		self.assertEqual(kwargs["json"]["appName"], f"Frappe – {frappe.local.site}")
+		self.assertEqual(kwargs["json"]["appName"], "Tarceel for ERPNext")
 		self.assertTrue(req.call_args[0][1].endswith("/connect/device-code"))
 
 	@mock.patch("tarceel_erpnext.client.requests.request")
