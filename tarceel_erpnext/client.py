@@ -128,6 +128,21 @@ def get_instance_status():
 	return _request("GET", _instance_url(settings), _headers(settings))
 
 
+def get_session_qr():
+	"""GET /instances/{id}/qr — the current pending WhatsApp pairing QR while the
+	number is linking. Returns {"qr": "<string>"} where qr is null once linked."""
+	settings = get_settings()
+	return _request("GET", _instance_url(settings, "/qr"), _headers(settings))
+
+
+def relink_session():
+	"""POST /instances/{id}/relink — only valid while sessionStatus is logged_out;
+	clears the stale linked-device creds so Tarceel issues a fresh pairing QR within
+	one poll interval. Returns {"status": "relink_requested"}."""
+	settings = get_settings()
+	return _request("POST", _instance_url(settings, "/relink"), _headers(settings))
+
+
 def send_text(to, text):
 	"""POST /instances/{id}/messages/text. `to` is a bare number with country code,
 	no '+' or '@s.whatsapp.net' suffix. Returns {"id": "<message id>"}."""

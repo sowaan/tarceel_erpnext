@@ -200,6 +200,80 @@ def _save_connected_credentials(instance_id, api_key):
 	settings.save(ignore_permissions=True)
 
 
+# States where the WhatsApp number is (or can be) linked via a scannable QR.
+_QR_SESSION_STATES = {"qr_pending", "connecting", "reconnecting"}
+
+
+@frappe.whitelist()
+def get_session_qr():
+	"""Return the WhatsApp session status and, while the number is linking, a
+	scannable QR image rendered LOCALLY from Tarceel's pairing string (never sent to
+	any third-party renderer). Lets an admin re-link from Tarceel Settings without
+	opening the Tarceel dashboard.
+
+	Returns {session_status, qr_image (data URI | None), needs_relink, error?}.
+	"""
+	frappe.only_for("System Manager")
+
+	try:
+		info = get_instance_status()
+	except TarceelError as exc:
+		frappe.clear_messages()
+		return {"error": str(exc)}
+
+	session_status = info.get("sessionStatus")
+	result = {"session_status": session_status, "qr_image": None, "needs_relink": False}
+
+	if session_status == "connected":
+		return result
+	if session_status == "logged_out":
+		# Stale creds — there is no pending QR until a relink is requested.
+		result["needs_relink"] = True
+		return result
+	if session_status not in _QR_SESSION_STATES:
+		return result
+
+	try:
+		qr = (client.get_session_qr() or {}).get("qr")
+	except TarceelError as exc:
+		frappe.clear_messages()
+		result["error"] = str(exc)
+		return result
+
+	if qr:
+		result["qr_image"] = _render_qr_data_uri(qr)
+	return result
+
+
+@frappe.whitelist()
+def relink_session():
+	"""Ask Tarceel for a fresh pairing QR after the number was logged out
+	(POST /relink). Returns {ok, message?}."""
+	frappe.only_for("System Manager")
+	try:
+		client.relink_session()
+	except TarceelError as exc:
+		frappe.clear_messages()
+		return {"ok": False, "message": str(exc)}
+	return {"ok": True}
+
+
+def _render_qr_data_uri(payload):
+	"""Render a pairing-QR payload string to a PNG data URI, locally. If Tarceel
+	already returned an image data URI, pass it through unchanged."""
+	if payload.startswith("data:image"):
+		return payload
+
+	import io
+
+	import qrcode
+
+	img = qrcode.make(payload)
+	buf = io.BytesIO()
+	img.save(buf, format="PNG")
+	return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
 @frappe.whitelist()
 def get_setup_status():
 	"""Setup/connection snapshot for the Notification form banner. Only meaningful

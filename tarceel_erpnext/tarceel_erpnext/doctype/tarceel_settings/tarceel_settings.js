@@ -3,6 +3,16 @@
 
 const TARCEEL_ICON = "/assets/tarceel_erpnext/images/tarceel_icon_sm.png";
 
+// Session states where the number is (or can be) linked by scanning a QR.
+const QR_SESSION_STATES = ["qr_pending", "logged_out", "connecting", "reconnecting"];
+
+// Active QR poll timers, so a re-render or leaving the page stops the loop.
+let qrPollTimers = [];
+function stopQrPolling() {
+	qrPollTimers.forEach(clearTimeout);
+	qrPollTimers = [];
+}
+
 frappe.ui.form.on("Tarceel Settings", {
 	refresh(frm) {
 		// Connect + webhook setup live in the cards (render_intro), not the toolbar.
@@ -13,6 +23,7 @@ frappe.ui.form.on("Tarceel Settings", {
 
 function render_intro(frm) {
 	inject_intro_styles();
+	stopQrPolling(); // any previous QR poll loop is stale now
 	const field = frm.get_field("disclosure_html");
 	if (!field) return;
 
@@ -47,8 +58,12 @@ function render_intro(frm) {
 						"The saved API Key or Instance ID was rejected by Tarceel (401). Connect again to re-link your WhatsApp instance."
 					)
 				);
+			} else if (conn && !conn.ok && QR_SESSION_STATES.includes(conn.session_status)) {
+				// Number isn't linked (qr_pending / logged_out / (re)connecting):
+				// let the user scan the QR right here instead of opening Tarceel.
+				render_qr_card(frm, field, disclosure);
 			} else if (conn) {
-				field.html(connection_status_card(conn) + webhook_card(frm) + disclosure);
+				field.html(connection_status_card(conn) + (conn.ok ? webhook_card(frm) : "") + disclosure);
 				field.$wrapper.find(".tarceel-recheck-btn").on("click", () => test_connection(frm));
 				field.$wrapper.find(".tarceel-reconnect-btn").on("click", () => connect_to_tarceel(frm));
 				field.$wrapper.find(".tarceel-webhook-btn").on("click", () => configure_webhook(frm));
@@ -459,6 +474,23 @@ function inject_intro_styles() {
 			box-shadow: 0 8px 18px rgba(37, 211, 102, 0.5); animation: none;
 		}
 		.tarceel-wh-btn:disabled { opacity: 0.7; cursor: default; animation: none; box-shadow: none; }
+		.tarceel-qr-card {
+			text-align: center; padding: 24px 22px; margin: 0 0 14px;
+			border: 1px solid rgba(37, 211, 102, 0.25); border-radius: var(--border-radius-lg, 12px);
+			background:
+				radial-gradient(120% 90% at 50% 0%, rgba(37, 211, 102, 0.08), rgba(37, 211, 102, 0) 60%),
+				var(--card-bg, #fff);
+		}
+		.tarceel-qr-title { font-weight: 700; font-size: 16px; color: var(--heading-color, #1f272e); }
+		.tarceel-qr-sub { margin: 6px auto 16px; max-width: 360px; line-height: 1.5; }
+		.tarceel-qr-box {
+			display: inline-flex; align-items: center; justify-content: center;
+			width: 232px; height: 232px; padding: 10px;
+			background: #fff; border: 1px solid var(--border-color, #e5e7eb); border-radius: 12px;
+		}
+		.tarceel-qr-img { width: 100%; height: 100%; object-fit: contain; }
+		.tarceel-qr-err { color: #b02a2a; font-size: 12px; padding: 12px; line-height: 1.4; }
+		.tarceel-qr-status { margin-top: 12px; }
 	`;
 	$(`<style id="tarceel-intro-styles">${css}</style>`).appendTo("head");
 }
@@ -491,6 +523,78 @@ function webhook_card(frm) {
 		  )}</button></div>`
 		: `<button type="button" class="tarceel-wh-btn tarceel-webhook-btn">${__("Enable")}</button>`;
 	return `<div class="tarceel-wh-card">${left}${right}</div>`;
+}
+
+function render_qr_card(frm, field, disclosure) {
+	stopQrPolling();
+	field.html(
+		`<div class="tarceel-qr-card">
+			<div class="tarceel-qr-title">${__("Link your WhatsApp number")}</div>
+			<div class="tarceel-qr-sub text-muted">${__(
+				"On your phone open WhatsApp, go to Linked Devices, tap Link a Device, and scan this code."
+			)}</div>
+			<div class="tarceel-qr-box"><span class="tarceel-connect-spinner"></span></div>
+			<div class="tarceel-qr-status text-muted small">${__("Loading QR code…")}</div>
+		</div>` + disclosure
+	);
+	const $box = field.$wrapper.find(".tarceel-qr-box");
+	const $status = field.$wrapper.find(".tarceel-qr-status");
+	qr_tick(frm, $box, $status);
+}
+
+function qr_tick(frm, $box, $status) {
+	// Stop if the card is gone (form re-rendered or user navigated away).
+	if (!$box.length || !document.body.contains($box[0])) return;
+
+	const later = (ms) => qrPollTimers.push(setTimeout(() => qr_tick(frm, $box, $status), ms));
+
+	frappe.call({
+		method: "tarceel_erpnext.api.get_session_qr",
+		callback: (r) => {
+			if (!document.body.contains($box[0])) return;
+			const res = r.message || {};
+
+			if (res.session_status === "connected") {
+				frappe.show_alert({ message: __("WhatsApp connected."), indicator: "green" });
+				frm.reload_doc();
+				return;
+			}
+			if (res.error) {
+				$box.html(`<div class="tarceel-qr-err">${frappe.utils.escape_html(res.error)}</div>`);
+				$status.text(__("Retrying…"));
+				later(8000);
+				return;
+			}
+			if (res.needs_relink) {
+				// Logged out: no pending QR until we request a relink.
+				$status.text(__("Your number was logged out."));
+				$box.html(
+					`<button type="button" class="tarceel-wh-btn tarceel-qr-relink">${__(
+						"Generate QR code"
+					)}</button>`
+				);
+				$box.find(".tarceel-qr-relink").on("click", () => {
+					$box.html(`<span class="tarceel-connect-spinner"></span>`);
+					$status.text(__("Requesting a fresh QR code…"));
+					frappe.call({
+						method: "tarceel_erpnext.api.relink_session",
+						callback: () => later(3000),
+						error: () => later(4000),
+					});
+				});
+				return; // wait for the user's click
+			}
+			if (res.qr_image) {
+				$box.html(`<img class="tarceel-qr-img" src="${res.qr_image}" alt="WhatsApp QR code" />`);
+				$status.text(__("Waiting for you to scan…"));
+			} else {
+				$box.html(`<span class="tarceel-connect-spinner"></span>`);
+				$status.text(__("Preparing QR code…"));
+			}
+			later(5000); // QR rotates; refresh and keep watching for a successful scan
+		},
+		error: () => later(8000),
+	});
 }
 
 function configure_webhook(frm) {
