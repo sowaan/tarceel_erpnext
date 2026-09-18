@@ -26,6 +26,11 @@ class TarceelError(frappe.ValidationError):
 	contains the API key or request headers."""
 
 
+class TarceelAuthError(TarceelError):
+	"""Tarceel rejected the credentials (HTTP 401): the instance API key and/or
+	instance id is wrong. The user needs to re-link (run Connect again)."""
+
+
 def get_settings():
 	"""Return the (cached) Tarceel Settings single doc, validating it is usable."""
 	settings = frappe.get_cached_doc("Tarceel Settings")
@@ -74,7 +79,10 @@ def _request(method, url, headers, json=None):
 		payload = {}
 
 	if not response.ok:
-		frappe.throw(_tarceel_error_message(response.status_code, payload), TarceelError)
+		# 401 means the credentials are wrong — raise the auth-specific error so
+		# callers can prompt a re-link rather than treating it as a transient fault.
+		exc_class = TarceelAuthError if response.status_code == 401 else TarceelError
+		frappe.throw(_tarceel_error_message(response.status_code, payload), exc_class)
 
 	return payload
 
