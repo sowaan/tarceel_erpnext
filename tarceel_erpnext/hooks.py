@@ -162,11 +162,13 @@ after_migrate = "tarceel_erpnext.setup.after_migrate"
 # 	}
 # }
 
-# Phase 5: add a native "WhatsApp" channel to Frappe's Notification by overriding
-# its controller (Frappe's channel dispatch has no plugin hook). The property
-# setter adding the channel option is applied by patches.txt.
-override_doctype_class = {
-	"Notification": "tarceel_erpnext.overrides.notification.TarceelNotification"
+# Phase 5: add a native "WhatsApp" channel to Frappe's Notification. On v16 we
+# extend (mix in) the controller rather than fully replacing it, so upstream fixes
+# and other apps' extensions still apply. TarceelNotification cooperatively calls
+# super() for every channel except WhatsApp. The property setter adding the channel
+# option is applied by patches.txt.
+extend_doctype_class = {
+	"Notification": ["tarceel_erpnext.overrides.notification.TarceelNotification"]
 }
 
 # Show linked WhatsApp messages (with delivery status) in every document's
