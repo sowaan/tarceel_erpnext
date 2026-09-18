@@ -76,6 +76,117 @@ def test_connection():
 	}
 
 
+# --- Connect (device-authorization) flow ------------------------------------
+#
+# Lets the app obtain an instanceId + API key without a human copy-pasting a key
+# from the Tarceel dashboard. The secret `deviceCode` lives ONLY in server-side
+# cache (keyed by a random flow id); the browser gets just enough to show the
+# approval prompt. The `apiKey` is written straight to the encrypted Password
+# field and is never returned to the client (guardrail #3).
+
+_CONNECT_FLOW_PREFIX = "tarceel_connect_flow"
+_CONNECT_FLOW_TTL = 600  # 10 minutes — matches Tarceel's own device-code expiry.
+
+
+def _connect_flow_key(flow_id):
+	return f"{_CONNECT_FLOW_PREFIX}:{flow_id}"
+
+
+@frappe.whitelist()
+def connect_start():
+	"""Begin the Tarceel Connect flow. Asks Tarceel for a device/user code,
+	stashes the secret deviceCode server-side under a random flow id, and returns
+	only what the browser needs: {flow_id, user_code, verification_uri, interval}.
+	The deviceCode is never returned to the client."""
+	frappe.only_for("System Manager")
+
+	app_name = f"Frappe – {frappe.local.site}"
+	data = client.request_device_code(app_name)
+
+	device_code = data.get("deviceCode")
+	if not device_code:
+		frappe.throw(_("Tarceel did not return a device code. Please try again."), TarceelError)
+
+	interval = int(data.get("interval") or 5)
+	flow_id = frappe.generate_hash(length=32)
+	frappe.cache().set_value(
+		_connect_flow_key(flow_id),
+		{"device_code": device_code, "user": frappe.session.user, "interval": interval},
+		expires_in_sec=_CONNECT_FLOW_TTL,
+	)
+
+	return {
+		"flow_id": flow_id,
+		"user_code": data.get("userCode"),
+		"verification_uri": data.get("verificationUri"),
+		"interval": interval,
+	}
+
+
+@frappe.whitelist()
+def connect_poll(flow_id):
+	"""Poll one step of the Connect flow started by connect_start. Returns
+	{status: pending|approved|denied|expired|error, message?}. On "approved" it
+	saves the returned instanceId + apiKey into Tarceel Settings (the key into the
+	encrypted Password field) and enables the integration — the apiKey is never
+	echoed back to the client."""
+	frappe.only_for("System Manager")
+
+	cache_key = _connect_flow_key(flow_id)
+	flow = frappe.cache().get_value(cache_key)
+	if not flow:
+		return {"status": "expired", "message": _("This connection attempt expired. Please start again.")}
+	if flow.get("user") != frappe.session.user:
+		frappe.throw(
+			_("This connection attempt was started by another user."), frappe.PermissionError
+		)
+
+	try:
+		data = client.poll_connect_token(flow["device_code"])
+	except TarceelError as exc:
+		return {"status": "error", "message": str(exc)}
+
+	status = (data.get("status") or "").lower()
+
+	if status == "pending":
+		return {"status": "pending"}
+
+	if status == "approved":
+		instance_id = data.get("instanceId")
+		api_key = data.get("apiKey")
+		if not (instance_id and api_key):
+			# Forget the flow: an approval with no credentials can't be retried usefully.
+			frappe.cache().delete_value(cache_key)
+			return {
+				"status": "error",
+				"message": _("Tarceel approved the connection but returned no credentials."),
+			}
+		_save_connected_credentials(instance_id, api_key)
+		frappe.cache().delete_value(cache_key)
+		# The saved key changed — drop the cached health snapshot so it re-checks.
+		frappe.cache().delete_value(_CONNECTION_SNAPSHOT_KEY)
+		return {"status": "approved", "message": _("Connected to Tarceel. Your instance is now linked.")}
+
+	# denied / expired / anything else terminal: forget the flow so the UI can
+	# offer a clean retry rather than polling a dead code.
+	frappe.cache().delete_value(cache_key)
+	if status == "denied":
+		return {"status": "denied", "message": _("The connection request was denied in Tarceel.")}
+	if status == "expired":
+		return {"status": "expired", "message": _("This connection attempt expired. Please start again.")}
+	return {"status": status or "error", "message": _("Unexpected response from Tarceel.")}
+
+
+def _save_connected_credentials(instance_id, api_key):
+	"""Persist the instanceId + API key from an approved Connect flow. The key is
+	written to the encrypted Password field; it is never logged or echoed back."""
+	settings = frappe.get_doc("Tarceel Settings")
+	settings.instance_id = instance_id
+	settings.api_key = api_key
+	settings.enabled = 1
+	settings.save(ignore_permissions=True)
+
+
 @frappe.whitelist()
 def get_setup_status():
 	"""Setup/connection snapshot for the Notification form banner. Only meaningful
