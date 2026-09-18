@@ -38,6 +38,17 @@
 - **Full message log.** Every outgoing message is recorded (recipient, body, status, the Tarceel
   message id, and a link back to the document it came from).
 
+## Screenshots
+
+|  |  |
+|---|---|
+| **Connect in one click** | **Link the number by QR, in Frappe** |
+| ![Connect to Tarceel](screenshots/01-connect.png) | ![Scan the WhatsApp QR](screenshots/03-qr.png) |
+| **Send from any document** | **Delivery status and message log** |
+| ![Send WhatsApp dialog](screenshots/04-send.png) | ![WhatsApp Message Log](screenshots/05-message-log.png) |
+| **Automate with a Notification** | **Connection and delivery updates** |
+| ![WhatsApp notification channel](screenshots/06-notification.png) | ![Connected status and webhook](screenshots/02-connected.png) |
+
 ## Requirements
 
 - A Frappe / ERPNext site:
