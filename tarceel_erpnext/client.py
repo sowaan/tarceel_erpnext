@@ -91,8 +91,10 @@ def _tarceel_error_message(status_code, payload):
 		detail = error.get("message")
 	elif isinstance(error, str):
 		detail = error
-	if not detail:
-		detail = payload.get("message") or payload.get("error_description")
+	# Prefer a descriptive top-level message when present — Fastify-style errors
+	# ({"message": "Route ... not found", "error": "Not Found"}) put the useful
+	# text there, not in `error`.
+	detail = payload.get("message") or payload.get("error_description") or detail
 
 	if status_code == 401:
 		return _("Tarceel rejected the API key (401). Re-check the Instance API Key in Tarceel Settings.")
